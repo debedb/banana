@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Sutra Sorter . BANANASUTRA</title>
+<style>
+  :root {
+    --cream: #f4f1e8;
+    --ink: #13110d;
+    --banana: #f2c84b;
+    --shadow: #6b4f2a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    background: var(--ink);
+    color: var(--cream);
+    font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #back {
+    position: fixed; top: 12px; left: 14px; z-index: 20;
+    color: rgba(244,241,232,0.55); text-decoration: none;
+    font-size: 13px; letter-spacing: 0.04em;
+    padding: 4px 6px; border-radius: 6px;
+    transition: color 0.15s, background 0.15s;
+  }
+  #back:hover { color: var(--cream); background: rgba(244,241,232,0.07); }
+  #game {
+    position: relative;
+    width: min(96vw, 480px);
+    height: min(92vh, 780px);
+    background: radial-gradient(120% 90% at 50% 0%, #211c12 0%, #13110d 70%);
+    border-radius: 18px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(244,241,232,0.06);
+    overflow: hidden;
+  }
+  canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+
+  /* Heads-up bar */
+  #hud {
+    position: absolute; top: 0; left: 0; right: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px;
+    font-size: 14px; letter-spacing: 0.04em;
+    pointer-events: none;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.7);
+  }
+  #hud .score { font-weight: bold; font-size: 20px; }
+  #hud .score small { font-weight: normal; opacity: 0.65; font-size: 12px; }
+  #lives { letter-spacing: 2px; font-size: 18px; }
+  #combo {
+    position: absolute; top: 44px; left: 16px;
+    font-size: 13px; color: var(--banana); opacity: 0;
+    transition: opacity 0.2s; pointer-events: none;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.7);
+  }
+  #muteBtn {
+    position: absolute; top: 10px; right: 12px;
+    pointer-events: auto; cursor: pointer;
+    background: rgba(244,241,232,0.08); color: var(--cream);
+    border: 1px solid rgba(244,241,232,0.18); border-radius: 8px;
+    padding: 4px 9px; font-size: 12px; font-family: inherit;
+  }
+
+  /* Overlays */
+  .overlay {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center; padding: 28px;
+    background: rgba(19,17,13,0.82);
+    backdrop-filter: blur(3px);
+    z-index: 5;
+  }
+  .overlay.hidden { display: none; }
+  .logo {
+    font-size: 13px; letter-spacing: 0.42em; opacity: 0.7;
+    margin-bottom: 6px;
+  }
+  .overlay h1 {
+    font-size: clamp(30px, 9vw, 46px);
+    line-height: 1.0; margin-bottom: 8px;
+    color: var(--banana);
+  }
+  .overlay h1 .light { color: var(--banana); }
+  .tagline { font-style: italic; opacity: 0.8; margin-bottom: 20px; font-size: 15px; }
+  .rules {
+    font-size: 14px; line-height: 1.7; opacity: 0.9;
+    max-width: 330px; margin-bottom: 22px;
+  }
+  .rules b { color: var(--banana); }
+  .rules .bad { color: #e88b6a; }
+  .legend {
+    display: flex; flex-wrap: wrap; justify-content: center;
+    gap: 6px; max-width: 340px; margin-bottom: 22px;
+  }
+  .legend .chip {
+    font-size: 11px; letter-spacing: 0.02em;
+    padding: 4px 8px; border-radius: 999px;
+    border: 1px solid rgba(244,241,232,0.18);
+    background: rgba(244,241,232,0.04);
+    display: flex; align-items: center; gap: 5px;
+    white-space: nowrap;
+  }
+  .legend .chip i {
+    width: 9px; height: 9px; border-radius: 50%;
+    display: inline-block; font-style: normal;
+  }
+  .legend .chip b { color: var(--cream); font-weight: bold; }
+  .legend .chip span { opacity: 0.7; }
+  .btn {
+    cursor: pointer; font-family: inherit; font-weight: bold;
+    font-size: 17px; letter-spacing: 0.03em;
+    color: var(--ink); background: var(--banana);
+    border: none; border-radius: 999px;
+    padding: 13px 34px;
+    box-shadow: 0 8px 0 #b9952f, 0 12px 22px rgba(0,0,0,0.45);
+    transition: transform 0.06s, box-shadow 0.06s;
+  }
+  .btn:active { transform: translateY(4px); box-shadow: 0 4px 0 #b9952f, 0 8px 14px rgba(0,0,0,0.45); }
+  .bertrand {
+    margin-top: 20px; font-size: 13px; font-style: italic;
+    opacity: 0.78; max-width: 330px; line-height: 1.55;
+  }
+  .bertrand b { color: var(--banana); font-style: normal; }
+  .final-score { font-size: 15px; margin-bottom: 4px; opacity: 0.85; }
+  .final-score b { color: var(--banana); font-size: 30px; display: block; margin-top: 2px; }
+  .hint { font-size: 12px; opacity: 0.55; margin-top: 16px; }
+</style>
+</head>
+<body>
+<a id="back" href="./index.html">&lt;- all games</a>
+<div id="game">
+  <canvas id="cv"></canvas>
+
+  <div id="hud">
+    <div class="score">SCORE <span id="scoreVal">0</span><br><small>BEST <span id="bestVal">0</span></small></div>
+    <div id="lives"></div>
+  </div>
+  <div id="combo"></div>
+  <button id="muteBtn">SOUND: ON</button>
+
+  <!-- Start screen -->
+  <div class="overlay" id="startScreen">
+    <div class="logo">B A N A N A S U T R A</div>
+    <h1>Sutra <span class="light">Sorter</span></h1>
+    <div class="tagline">A question falls. Find the bin that answers it.</div>
+    <div class="rules">
+      A card drops bearing one <b>question</b>.<br>
+      Send it to the matching <b>sutra bin</b> below.<br>
+      <b>Tap</b> the bin, press <b>1-7</b>, or <b>drag</b> the card.<br>
+      A wrong bin or the <span class="bad">floor</span> costs a life.
+    </div>
+    <div class="legend" id="legend"></div>
+    <button class="btn" id="startBtn">Start sorting</button>
+    <div class="bertrand"><b>Bertrand:</b> Each question seeks its home, mon ami. A place for every peel, and every peel in its place.</div>
+    <div class="hint">Sort: tap / 1-7 / drag &nbsp;.&nbsp; M: mute &nbsp;.&nbsp; P: pause</div>
+  </div>
+
+  <!-- Game over screen -->
+  <div class="overlay hidden" id="overScreen">
+    <div class="logo">B A N A N A S U T R A</div>
+    <h1 id="overTitle">Sorted!</h1>
+    <div class="final-score">Your tally<b id="finalScore">0</b></div>
+    <div class="final-score" id="bestLine" style="opacity:0.7;font-size:13px;"></div>
+    <button class="btn" id="againBtn">Sort again</button>
+    <div class="bertrand" id="overBertrand"></div>
+    <div class="hint">Press SPACE to play again</div>
+  </div>
+
+  <!-- Pause screen -->
+  <div class="overlay hidden" id="pauseScreen">
+    <h1 style="font-size:34px;">Paused</h1>
+    <div class="tagline">The question hangs in the air.</div>
+    <button class="btn" id="resumeBtn">Resume</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ----- The seven sutras: name, its question, and its color cue -----
+  var SUTRAS = [
+    { name: "KNOW", q: "Is it true?",  color: "#4fb0e6" },
+    { name: "BLOW", q: "Is it fair?",  color: "#e5564e" },
+    { name: "SHOW", q: "Is it fun?",   color: "#f2933c" },
+    { name: "GROW", q: "Is it brave?", color: "#5fb85c" },
+    { name: "FLOW", q: "Is it free?",  color: "#3fc9c2" },
+    { name: "GLOW", q: "Is it full?",  color: "#f2c84b" },
+    { name: "BOW",  q: "Is it awe?",   color: "#a877d8" }
+  ];
+
+  var PRAISE = ["sorted!", "tidy!", "filed!", "in its place!", "well placed!", "impeccable!"];
+
+  // ----- Canvas / sizing -----
+  var wrap = document.getElementById("game");
+  var cv = document.getElementById("cv");
+  var ctx = cv.getContext("2d");
+  var W = 0, H = 0, DPR = 1;
+
+  // Layout regions computed on resize
+  var binTop = 0, binH = 0, binGap = 0, binW = 0, binY0 = 0, floorY = 0;
+
+  function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = wrap.clientWidth;
+    H = wrap.clientHeight;
+    cv.width = Math.round(W * DPR);
+    cv.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    layoutBins();
+  }
+
+  function layoutBins() {
+    binH = clamp(H * 0.16, 86, 132);
+    binTop = H - binH - 12;
+    floorY = binTop;            // card "hits the floor" at the mouth of the bins
+    binGap = 5;
+    var pad = 8;
+    var usable = W - pad * 2 - binGap * (SUTRAS.length - 1);
+    binW = usable / SUTRAS.length;
+    binY0 = pad;
+  }
+
+  window.addEventListener("resize", resize);
+  resize();
+
+  function binX(i) {
+    var x = binY0 + i * (binW + binGap);
+    return x;
+  }
+  function binCenterX(i) {
+    var x = binX(i) + binW / 2;
+    return x;
+  }
+
+  // ----- Game state -----
+  var STATE = { MENU: 0, PLAY: 1, OVER: 2, PAUSE: 3 };
+  var state = STATE.MENU;
+
+  var card, particles, floats;
+  var score, lives, combo, bestCombo, elapsed, spawnTimer, sorted;
+  var shake = 0;
+  var muted = false;
+  var binFlash = [];          // per-bin flash timers
+  var BEST_KEY = "bss-sorter-hi";
+  var best = parseInt(localStorage.getItem(BEST_KEY) || "0", 10) || 0;
+
+  // Drag state for the falling card
+  var drag = { active: false, dx: 0 };
+
+  function reset() {
+    card = null;
+    particles = [];
+    floats = [];
+    score = 0;
+    lives = 3;
+    combo = 0;
+    bestCombo = 0;
+    elapsed = 0;
+    sorted = 0;
+    spawnTimer = 0.4;
+    shake = 0;
+    binFlash = SUTRAS.map(function () { return 0; });
+    drag.active = false;
+  }
+
+  function cardW() {
+    var w = clamp(W * 0.42, 140, 220);
+    return w;
+  }
+  function cardH() {
+    var h = clamp(W * 0.26, 88, 130);
+    return h;
+  }
+
+  // ----- Difficulty -----
+  function level() {
+    var lv = Math.floor(sorted / 5);
+    return lv;
+  }
+  function fallSpeed() {
+    var base = (binTop) * (0.18 + level() * 0.022);
+    var capped = Math.min(base, binTop * 0.55);
+    return capped;
+  }
+  function spawnGap() {
+    var g = Math.max(0.5, 1.15 - level() * 0.07);
+    return g;
+  }
+
+  // ----- Spawning -----
+  function spawn() {
+    var idx = (Math.random() * SUTRAS.length) | 0;
+    var w = cardW();
+    var hgt = cardH();
+    card = {
+      sutra: SUTRAS[idx],
+      idx: idx,
+      x: rand(W * 0.3, W * 0.7),
+      y: -hgt,
+      w: w, h: hgt,
+      vy: fallSpeed() * rand(0.92, 1.1),
+      tilt: rand(-0.05, 0.05)
+    };
+  }
+
+  // ----- Hit testing -----
+  function binAtX(px) {
+    for (var i = 0; i < SUTRAS.length; i++) {
+      var x = binX(i);
+      if (px >= x && px <= x + binW) { return i; }
+    }
+    return -1;
+  }
+  function pointInCard(px, py) {
+    if (!card) { return false; }
+    var hit = px >= card.x - card.w / 2 && px <= card.x + card.w / 2 &&
+              py >= card.y - card.h / 2 && py <= card.y + card.h / 2;
+    return hit;
+  }
+
+  // ----- Input -----
+  function localPoint(clientX, clientY) {
+    var rect = cv.getBoundingClientRect();
+    var p = { x: clientX - rect.left, y: clientY - rect.top };
+    return p;
+  }
+
+  function pressAt(px, py) {
+    if (state !== STATE.PLAY || !card) { return; }
+    // Grab the card if pressed on it (start a drag); otherwise treat a press
+    // in the bin row as a "send to this bin" command.
+    if (pointInCard(px, py)) {
+      drag.active = true;
+      drag.dx = px - card.x;
+      return;
+    }
+    if (py >= binTop) {
+      var i = binAtX(px);
+      if (i >= 0) { sendToBin(i); }
+    }
+  }
+
+  function moveAt(px) {
+    if (drag.active && card) {
+      card.x = clamp(px - drag.dx, card.w / 2, W - card.w / 2);
+    }
+  }
+
+  function releaseAt(px, py) {
+    if (!drag.active || !card) { drag.active = false; return; }
+    drag.active = false;
+    // Drop over the bin row -> resolve into the bin under the card center.
+    var cx = clamp(px, 0, W);
+    var i = binAtX(card.x);
+    if (i < 0) { i = binAtX(cx); }
+    if (i >= 0 && (py >= binTop * 0.5 || card.y + card.h / 2 >= binTop * 0.5)) {
+      sendToBin(i);
+    }
+  }
+
+  // Mouse
+  cv.addEventListener("mousedown", function (e) {
+    var p = localPoint(e.clientX, e.clientY);
+    pressAt(p.x, p.y);
+  });
+  cv.addEventListener("mousemove", function (e) {
+    var p = localPoint(e.clientX, e.clientY);
+    moveAt(p.x);
+  });
+  window.addEventListener("mouseup", function (e) {
+    var p = localPoint(e.clientX, e.clientY);
+    releaseAt(p.x, p.y);
+  });
+
+  // Touch
+  cv.addEventListener("touchstart", function (e) {
+    if (e.touches.length) {
+      var p = localPoint(e.touches[0].clientX, e.touches[0].clientY);
+      pressAt(p.x, p.y);
+    }
+  }, { passive: true });
+  cv.addEventListener("touchmove", function (e) {
+    if (e.touches.length) {
+      var p = localPoint(e.touches[0].clientX, e.touches[0].clientY);
+      moveAt(p.x);
+      if (drag.active) { e.preventDefault(); }
+    }
+  }, { passive: false });
+  cv.addEventListener("touchend", function (e) {
+    var t = (e.changedTouches && e.changedTouches.length) ? e.changedTouches[0] : null;
+    if (t) {
+      var p = localPoint(t.clientX, t.clientY);
+      releaseAt(p.x, p.y);
+    } else {
+      drag.active = false;
+    }
+  }, { passive: true });
+
+  // Keyboard
+  window.addEventListener("keydown", function (e) {
+    if (e.key === " " || e.code === "Space") {
+      if (state === STATE.MENU || state === STATE.OVER) { startGame(); }
+      e.preventDefault();
+      return;
+    }
+    if (e.key === "m" || e.key === "M") { toggleMute(); return; }
+    if (e.key === "p" || e.key === "P") {
+      if (state === STATE.PLAY) { pause(); }
+      else if (state === STATE.PAUSE) { resumeGame(); }
+      return;
+    }
+    if (state === STATE.PLAY && card) {
+      var n = parseInt(e.key, 10);
+      if (n >= 1 && n <= SUTRAS.length) {
+        sendToBin(n - 1);
+        e.preventDefault();
+      }
+    }
+  });
+
+  // Pause on tab/window blur
+  window.addEventListener("blur", function () { if (state === STATE.PLAY) { pause(); } });
+
+  // ----- Audio (WebAudio, no assets) -----
+  var actx = null;
+  function audio() {
+    if (!actx) {
+      try { actx = new (window.AudioContext || window.webkitAudioContext)(); }
+      catch (e) { actx = null; }
+    }
+    return actx;
+  }
+  function blip(freq, dur, type, vol) {
+    if (muted) { return; }
+    var a = audio();
+    if (!a) { return; }
+    var o = a.createOscillator();
+    var g = a.createGain();
+    o.type = type || "sine";
+    o.frequency.value = freq;
+    g.gain.value = vol || 0.18;
+    o.connect(g); g.connect(a.destination);
+    var t = a.currentTime;
+    g.gain.setValueAtTime(g.gain.value, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.start(t); o.stop(t + dur);
+  }
+  function sndRight() { blip(540 + Math.min(combo, 12) * 32, 0.12, "triangle", 0.16); }
+  function sndWrong() { blip(140, 0.26, "sawtooth", 0.22); blip(96, 0.3, "square", 0.12); }
+  function sndCombo() {
+    var seq = [660, 880, 1100];
+    seq.forEach(function (f, i) { setTimeout(function () { blip(f, 0.1, "triangle", 0.15); }, i * 60); });
+  }
+  function sndOver() {
+    var seq = [440, 350, 260, 180];
+    seq.forEach(function (f, i) { setTimeout(function () { blip(f, 0.22, "sine", 0.2); }, i * 130); });
+  }
+
+  function toggleMute() {
+    muted = !muted;
+    document.getElementById("muteBtn").textContent = "SOUND: " + (muted ? "OFF" : "ON");
+  }
+  document.getElementById("muteBtn").addEventListener("click", toggleMute);
+
+  // ----- Effects -----
+  function burst(x, y, color, n) {
+    for (var i = 0; i < n; i++) {
+      var ang = rand(0, Math.PI * 2);
+      var spd = rand(40, 220);
+      particles.push({
+        x: x, y: y,
+        vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd - 60,
+        life: rand(0.4, 0.9), max: 0.9,
+        r: rand(2, 5), color: color
+      });
+    }
+  }
+  function floatText(x, y, text, color) {
+    floats.push({ x: x, y: y, text: text, color: color, life: 1.0, vy: -42 });
+  }
+
+  // ----- Sort resolution -----
+  function sendToBin(i) {
+    if (!card || state !== STATE.PLAY) { return; }
+    var correct = (i === card.idx);
+    var cx = binCenterX(i);
+    var cy = binTop + binH * 0.4;
+    binFlash[i] = 0.4;
+    if (correct) {
+      combo++;
+      sorted++;
+      if (combo > bestCombo) { bestCombo = combo; }
+      var mult = Math.min(combo, 10);
+      var gain = 10 * mult;
+      score += gain;
+      burst(cx, cy, card.sutra.color, 16);
+      floatText(cx, binTop - 14, "+" + gain, card.sutra.color);
+      sndRight();
+      if (combo >= 3 && combo % 3 === 0) {
+        floatText(W / 2, binTop - 40, PRAISE[(combo / 3 - 1) % PRAISE.length], "#f2c84b");
+        sndCombo();
+      }
+      showCombo();
+      card = null;
+      spawnTimer = spawnGap() * rand(0.7, 1.0);
+    } else {
+      missSort(cx, "WRONG BIN", card.sutra.color);
+    }
+  }
+
+  function missSort(x, label, color) {
+    lives--;
+    combo = 0;
+    shake = 0.45;
+    burst(x, floorY - 6, "#7a5a30", 14);
+    floatText(x, floorY - 26, label, "#e88b6a");
+    sndWrong();
+    hideCombo();
+    card = null;
+    spawnTimer = spawnGap() * rand(0.8, 1.1);
+    if (lives <= 0) { endGame(); }
+  }
+
+  function showCombo() {
+    var el = document.getElementById("combo");
+    el.textContent = "COMBO x" + Math.min(combo, 10) + (combo > 10 ? " (+" + combo + ")" : "");
+    el.style.opacity = combo >= 2 ? "1" : "0";
+  }
+  function hideCombo() { document.getElementById("combo").style.opacity = "0"; }
+
+  // ----- Update -----
+  function update(dt) {
+    elapsed += dt;
+
+    // spawn a card when none is in play
+    if (!card) {
+      spawnTimer -= dt;
+      if (spawnTimer <= 0) { spawn(); }
+    } else {
+      // fall (unless being dragged downward by the player; still falls while dragged horizontally)
+      card.y += card.vy * dt;
+      // floor = top of the bins
+      if (card.y - card.h / 2 >= floorY) {
+        missSort(clamp(card.x, 0, W), "MISSED", "#e88b6a");
+      }
+    }
+
+    // particles
+    for (var p = particles.length - 1; p >= 0; p--) {
+      var pa = particles[p];
+      pa.life -= dt;
+      pa.vy += 520 * dt;
+      pa.x += pa.vx * dt;
+      pa.y += pa.vy * dt;
+      if (pa.life <= 0) { particles.splice(p, 1); }
+    }
+
+    // floating texts
+    for (var f = floats.length - 1; f >= 0; f--) {
+      var fl = floats[f];
+      fl.life -= dt * 1.1;
+      fl.y += fl.vy * dt;
+      if (fl.life <= 0) { floats.splice(f, 1); }
+    }
+
+    // bin flashes
+    for (var b = 0; b < binFlash.length; b++) {
+      if (binFlash[b] > 0) { binFlash[b] = Math.max(0, binFlash[b] - dt); }
+    }
+
+    if (shake > 0) { shake = Math.max(0, shake - dt); }
+  }
+
+  // ----- Render helpers -----
+  function dot(x, y, rr) {
+    ctx.beginPath();
+    ctx.arc(x, y, rr, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  // Draw one bin: a colored open-top tray with a sutra-name plate and an index.
+  function drawBin(i) {
+    var x = binX(i);
+    var y = binTop;
+    var s = SUTRAS[i];
+    var hl = (card && card.idx === i && drag.active);
+    var flash = binFlash[i];
+
+    ctx.save();
+
+    // tray body
+    var bodyTop = y + 14;
+    var bodyH = binH - 14;
+    ctx.fillStyle = "rgba(244,241,232,0.05)";
+    roundRect(x, bodyTop, binW, bodyH, 8);
+    ctx.fill();
+
+    // colored front band
+    ctx.fillStyle = hexA(s.color, 0.18 + flash * 0.7);
+    roundRect(x, bodyTop, binW, bodyH, 8);
+    ctx.fill();
+
+    // outline
+    ctx.lineWidth = hl ? 2.5 : 1.2;
+    ctx.strokeStyle = hl ? s.color : hexA(s.color, 0.55);
+    roundRect(x + 0.5, bodyTop + 0.5, binW - 1, bodyH - 1, 8);
+    ctx.stroke();
+
+    // glowing mouth (catch cue) along the top edge
+    ctx.strokeStyle = hexA(s.color, 0.85);
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x + 5, y + 14);
+    ctx.lineTo(x + binW - 5, y + 14);
+    ctx.stroke();
+
+    // sutra name plate
+    ctx.fillStyle = s.color;
+    var fs = Math.min(15, binW * 0.34);
+    ctx.font = "bold " + fs + "px 'Trebuchet MS', sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(s.name, x + binW / 2, bodyTop + bodyH * 0.42);
+
+    // index number cue
+    ctx.fillStyle = "rgba(244,241,232,0.5)";
+    ctx.font = "11px 'Trebuchet MS', sans-serif";
+    ctx.fillText(String(i + 1), x + binW / 2, bodyTop + bodyH * 0.78);
+
+    ctx.restore();
+  }
+
+  // Draw the falling card with the big question on it.
+  function drawCard() {
+    if (!card) { return; }
+    var c = card;
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.rotate(c.tilt);
+
+    // glow in the sutra color so the answer is hinted
+    ctx.shadowColor = c.sutra.color;
+    ctx.shadowBlur = 16;
+
+    // card body
+    ctx.fillStyle = "#1c180f";
+    roundRect(-c.w / 2, -c.h / 2, c.w, c.h, 14);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // colored top stripe
+    ctx.fillStyle = c.sutra.color;
+    roundRect(-c.w / 2, -c.h / 2, c.w, 8, 4);
+    ctx.fill();
+
+    // border
+    ctx.strokeStyle = hexA(c.sutra.color, 0.7);
+    ctx.lineWidth = 2;
+    roundRect(-c.w / 2 + 1, -c.h / 2 + 1, c.w - 2, c.h - 2, 13);
+    ctx.stroke();
+
+    // small "question" label
+    ctx.fillStyle = "rgba(244,241,232,0.4)";
+    ctx.font = "10px 'Trebuchet MS', sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("QUESTION", 0, -c.h / 2 + 22);
+
+    // big question text
+    ctx.fillStyle = "#f4f1e8";
+    var qfs = Math.min(26, c.w * 0.16);
+    ctx.font = "bold " + qfs + "px 'Trebuchet MS', sans-serif";
+    ctx.fillText(c.sutra.q, 0, 4);
+
+    // hint line
+    ctx.fillStyle = "rgba(244,241,232,0.35)";
+    ctx.font = "10px 'Trebuchet MS', sans-serif";
+    ctx.fillText("sort me below", 0, c.h / 2 - 16);
+
+    ctx.restore();
+  }
+
+  function render() {
+    ctx.clearRect(0, 0, W, H);
+    ctx.save();
+    if (shake > 0) {
+      var s = shake * 12;
+      ctx.translate(rand(-s, s), rand(-s, s));
+    }
+
+    // bins
+    for (var i = 0; i < SUTRAS.length; i++) { drawBin(i); }
+
+    // the falling card
+    drawCard();
+
+    // particles
+    particles.forEach(function (pa) {
+      ctx.globalAlpha = Math.max(0, pa.life / pa.max);
+      ctx.fillStyle = pa.color;
+      dot(pa.x, pa.y, pa.r);
+    });
+    ctx.globalAlpha = 1;
+
+    // floating texts
+    floats.forEach(function (fl) {
+      ctx.globalAlpha = Math.max(0, fl.life);
+      ctx.fillStyle = fl.color;
+      ctx.font = "bold 16px 'Trebuchet MS', sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(fl.text, fl.x, fl.y);
+    });
+    ctx.globalAlpha = 1;
+
+    ctx.restore();
+
+    // HUD sync
+    document.getElementById("scoreVal").textContent = score;
+    document.getElementById("bestVal").textContent = best;
+    renderLives();
+  }
+
+  function renderLives() {
+    var el = document.getElementById("lives");
+    var s = "";
+    for (var i = 0; i < 3; i++) { s += i < lives ? "&#9679;" : "&#9675;"; }
+    el.innerHTML = s;
+  }
+
+  // ----- Loop -----
+  var lastT = 0;
+  function frame(t) {
+    var dt = lastT ? Math.min((t - lastT) / 1000, 0.05) : 0;
+    lastT = t;
+    if (state === STATE.PLAY) {
+      update(dt);
+      render();
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  // ----- Screen transitions -----
+  function show(id) { document.getElementById(id).classList.remove("hidden"); }
+  function hide(id) { document.getElementById(id).classList.add("hidden"); }
+
+  function startGame() {
+    audio(); // unlock on user gesture
+    reset();
+    hide("startScreen"); hide("overScreen"); hide("pauseScreen");
+    hideCombo();
+    state = STATE.PLAY;
+  }
+
+  function pause() {
+    if (state !== STATE.PLAY) { return; }
+    state = STATE.PAUSE;
+    drag.active = false;
+    show("pauseScreen");
+  }
+  function resumeGame() {
+    if (state !== STATE.PAUSE) { return; }
+    hide("pauseScreen");
+    state = STATE.PLAY;
+  }
+
+  function endGame() {
+    state = STATE.OVER;
+    drag.active = false;
+    sndOver();
+    if (score > best) {
+      best = score;
+      localStorage.setItem(BEST_KEY, String(best));
+    }
+    document.getElementById("finalScore").textContent = score;
+    document.getElementById("overTitle").textContent = titleFor(score);
+    document.getElementById("bestLine").textContent =
+      "Best tally: " + best + "   .   Best combo: x" + bestCombo;
+    document.getElementById("overBertrand").innerHTML =
+      "<b>Bertrand:</b> " + bertrandFor(score);
+    show("overScreen");
+  }
+
+  function titleFor(s) {
+    if (s >= 1500) { return "Master Sorter!"; }
+    if (s >= 800) { return "Crisply Filed!"; }
+    if (s >= 300) { return "Neatly Done!"; }
+    return "Sorted!";
+  }
+  function bertrandFor(s) {
+    if (s >= 1500) { return "Exquisite. Every question knew its home before it landed. The seven sutras are in perfect order, mon ami."; }
+    if (s >= 800) { return "A tidy mind makes a tidy world. You have sorted with grace and only the lightest fumble."; }
+    if (s >= 300) { return "Respectable filing. A few cards wandered, but a butler forgives the occasional misplaced peel."; }
+    return "Even the finest butler once dropped the silver. Compose yourself and sort again, oui?";
+  }
+
+  document.getElementById("startBtn").addEventListener("click", startGame);
+  document.getElementById("againBtn").addEventListener("click", startGame);
+  document.getElementById("resumeBtn").addEventListener("click", resumeGame);
+  document.getElementById("game").addEventListener("click", function (e) {
+    if (state === STATE.PAUSE) { resumeGame(); }
+  });
+
+  // ----- Build the legend on the start screen -----
+  function buildLegend() {
+    var el = document.getElementById("legend");
+    var html = "";
+    for (var i = 0; i < SUTRAS.length; i++) {
+      var s = SUTRAS[i];
+      html += '<span class="chip"><i style="background:' + s.color + '"></i>' +
+              '<b>' + s.name + '</b> <span>' + s.q + '</span></span>';
+    }
+    el.innerHTML = html;
+  }
+
+  // ----- Utils -----
+  function clamp(v, lo, hi) { var r = v < lo ? lo : (v > hi ? hi : v); return r; }
+  function rand(a, b) { var r = a + Math.random() * (b - a); return r; }
+  function hexA(hex, a) {
+    var h = hex.replace("#", "");
+    var rr = parseInt(h.substring(0, 2), 16);
+    var gg = parseInt(h.substring(2, 4), 16);
+    var bb = parseInt(h.substring(4, 6), 16);
+    var out = "rgba(" + rr + "," + gg + "," + bb + "," + clamp(a, 0, 1) + ")";
+    return out;
+  }
+
+  buildLegend();
+  renderLives();
+})();
+</script>
+</body>
+</html>
