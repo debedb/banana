@@ -578,31 +578,66 @@
     ctx.fillText(label, px, py);
   }
 
-  function drawBasket() {
-    var x = basket.x, y = H - 60, w = basket.w, h = 46;
+  // A lidless teapot. The open mouth (glowing rim) is the catch zone.
+  function drawTeapot() {
+    var x = basket.x, w = basket.w;
+    var bw = w, bh = 48;
+    var top = H - 66;              // mouth / lip level (just above the catch line)
     ctx.save();
-    // bowl body
-    ctx.fillStyle = "#8a6a3c";
-    roundRect(x - w / 2, y - 6, w, h, 12);
+    ctx.lineJoin = "round";
+
+    // spout (left)
+    ctx.fillStyle = "#d9cfb8";
+    ctx.beginPath();
+    ctx.moveTo(x - bw * 0.40, top + 12);
+    ctx.quadraticCurveTo(x - bw * 0.76, top + 6, x - bw * 0.72, top - 16);
+    ctx.lineTo(x - bw * 0.57, top - 13);
+    ctx.quadraticCurveTo(x - bw * 0.52, top + 6, x - bw * 0.32, top + 18);
+    ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = "#a4824f";
-    roundRect(x - w / 2, y - 10, w, 14, 10);
-    ctx.fill();
-    // weave slats
-    ctx.strokeStyle = "rgba(40,26,10,0.35)";
-    ctx.lineWidth = 2;
-    for (var i = 1; i < 6; i++) {
-      var sx = x - w / 2 + (w / 6) * i;
-      ctx.beginPath();
-      ctx.moveTo(sx, y - 2);
-      ctx.lineTo(sx, y + h - 12);
-      ctx.stroke();
-    }
-    // glow rim to read as the "catch zone"
-    ctx.strokeStyle = "rgba(242,200,75,0.5)";
-    ctx.lineWidth = 3;
-    roundRect(x - w / 2, y - 10, w, 14, 10);
+
+    // handle (right) loop
+    ctx.strokeStyle = "#d9cfb8";
+    ctx.lineWidth = 7;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(x + bw * 0.40, top + 6);
+    ctx.quadraticCurveTo(x + bw * 0.68, top + 8, x + bw * 0.63, top + 26);
+    ctx.quadraticCurveTo(x + bw * 0.59, top + 38, x + bw * 0.40, top + 33);
     ctx.stroke();
+
+    // body
+    ctx.fillStyle = "#ece4d2";
+    roundRect(x - bw / 2, top, bw, bh, 16);
+    ctx.fill();
+    // lower shading
+    ctx.fillStyle = "rgba(0,0,0,0.07)";
+    roundRect(x - bw / 2, top + bh * 0.45, bw, bh * 0.55, 16);
+    ctx.fill();
+    // belly highlight
+    ctx.fillStyle = "rgba(255,255,255,0.33)";
+    ctx.beginPath();
+    ctx.ellipse(x - bw * 0.17, top + bh * 0.42, bw * 0.11, bh * 0.2, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // open top (no lid): dark interior mouth
+    ctx.fillStyle = "#241d12";
+    ctx.beginPath();
+    ctx.ellipse(x, top, bw * 0.38, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.4)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(x, top, bw * 0.38, 9, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // glowing rim = catch cue
+    ctx.strokeStyle = "rgba(242,200,75,0.8)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(x, top - 1, bw * 0.38, 9, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
     ctx.restore();
   }
 
@@ -645,7 +680,7 @@
       drawQuestion(it);
     });
 
-    drawBasket();
+    drawTeapot();
 
     // particles
     particles.forEach(function (pa) {
