@@ -461,37 +461,84 @@
   }
 
   // ----- Render -----
-  function drawBanana(x, y, r, angle, fill, dark, rotten) {
+  // Half-peeled banana: colored peel flaps splay down (carry the sutra color),
+  // pale fruit pokes up out of the opening.
+  function drawBanana(x, y, r, angle, peel, flesh, dark, rotten) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
-    // body: thick curved stroke = banana crescent
-    ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.lineWidth = r * 0.74;
-    ctx.strokeStyle = fill;
-    ctx.beginPath();
-    ctx.moveTo(-r * 0.85, r * 0.45);
-    ctx.quadraticCurveTo(0, -r * 1.15, r * 0.85, r * 0.45);
-    ctx.stroke();
-    // top highlight
-    ctx.lineWidth = r * 0.22;
-    ctx.strokeStyle = "rgba(255,255,255,0.28)";
-    ctx.beginPath();
-    ctx.moveTo(-r * 0.6, r * 0.18);
-    ctx.quadraticCurveTo(0, -r * 0.78, r * 0.6, r * 0.18);
-    ctx.stroke();
-    // tips
-    ctx.fillStyle = dark;
-    dot(-r * 0.85, r * 0.45, r * 0.16);
-    dot(r * 0.85, r * 0.45, r * 0.16);
-    // rotten spots
-    if (rotten) {
-      ctx.fillStyle = "rgba(40,26,10,0.55)";
-      dot(-r * 0.2, -r * 0.2, r * 0.16);
-      dot(r * 0.28, 0, r * 0.12);
-      dot(0.05 * r, r * 0.2, r * 0.1);
+
+    var baseY = r * 0.12;
+    var halfW = r * 0.34;
+
+    // one peel flap = tapered leaf from the opening down to a tip
+    function flap(tipX, tipY) {
+      ctx.beginPath();
+      ctx.moveTo(-halfW, baseY);
+      ctx.quadraticCurveTo(tipX * 0.6 - r * 0.15, (baseY + tipY) * 0.5, tipX, tipY);
+      ctx.quadraticCurveTo(tipX * 0.6 + r * 0.15, (baseY + tipY) * 0.5, halfW, baseY);
+      ctx.closePath();
+      ctx.fillStyle = peel;
+      ctx.fill();
+      // shaded inner edge so flaps read as separate
+      ctx.fillStyle = "rgba(0,0,0,0.10)";
+      ctx.beginPath();
+      ctx.moveTo(0, baseY);
+      ctx.quadraticCurveTo(tipX * 0.55, (baseY + tipY) * 0.5, tipX, tipY);
+      ctx.quadraticCurveTo(tipX * 0.62, (baseY + tipY) * 0.5, halfW * 0.5, baseY);
+      ctx.closePath();
+      ctx.fill();
+      // dark tip nub
+      ctx.fillStyle = dark;
+      dot(tipX, tipY, r * 0.1);
     }
+
+    // peel flaps (behind the fruit), splayed left / center / right
+    flap(-r * 0.92, r * 0.92);
+    flap(r * 0.92, r * 0.92);
+    flap(0, r * 1.18);
+
+    // fruit body (pale flesh) emerging upward
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.30, baseY + r * 0.04);
+    ctx.quadraticCurveTo(-r * 0.46, -r * 0.85, 0, -r * 1.02);
+    ctx.quadraticCurveTo(r * 0.46, -r * 0.85, r * 0.30, baseY + r * 0.04);
+    ctx.quadraticCurveTo(0, baseY + r * 0.30, -r * 0.30, baseY + r * 0.04);
+    ctx.closePath();
+    ctx.fillStyle = flesh;
+    ctx.fill();
+
+    // faint center seam on the flesh
+    ctx.strokeStyle = "rgba(0,0,0,0.08)";
+    ctx.lineWidth = r * 0.06;
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 0.8);
+    ctx.lineTo(0, baseY);
+    ctx.stroke();
+
+    // glossy highlight on the flesh
+    ctx.strokeStyle = "rgba(255,255,255,0.5)";
+    ctx.lineWidth = r * 0.12;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.14, -r * 0.2);
+    ctx.quadraticCurveTo(-r * 0.22, -r * 0.7, 0.02 * r, -r * 0.92);
+    ctx.stroke();
+
+    // stem nub where it was peeled open
+    ctx.fillStyle = dark;
+    dot(0, -r * 1.02, r * 0.1);
+
+    // rotten spots (shadow bananas)
+    if (rotten) {
+      ctx.fillStyle = "rgba(40,26,10,0.5)";
+      dot(-r * 0.12, -r * 0.42, r * 0.12);
+      dot(r * 0.1, -r * 0.05, r * 0.1);
+      dot(-r * 0.5, r * 0.62, r * 0.12);
+      dot(r * 0.46, r * 0.56, r * 0.1);
+    }
+
     ctx.restore();
   }
 
@@ -580,19 +627,19 @@
       var angle = Math.sin(it.sway) * 0.25 + it.spin;
       it.x += Math.cos(it.sway) * it.swayAmt * 0.06;
       if (it.kind === "shadow") {
-        drawBanana(it.x, it.y, it.r, angle, "#6b4f2a", "#2e2110", true);
+        drawBanana(it.x, it.y, it.r, angle, "#6b4f2a", "#b3a488", "#2e2110", true);
       } else if (it.kind === "bonus") {
         ctx.save();
         ctx.shadowColor = "rgba(255,220,120,0.9)";
         ctx.shadowBlur = 18;
-        drawBanana(it.x, it.y, it.r, angle, "#ffd34d", "#7a5a18", false);
+        drawBanana(it.x, it.y, it.r, angle, "#ffd34d", "#fff3cf", "#7a5a18", false);
         ctx.restore();
         drawSparkle(it.x, it.y - it.r * 0.2, it.r * 0.7);
       } else {
         ctx.save();
         ctx.shadowColor = it.sutra.color;
         ctx.shadowBlur = 12;
-        drawBanana(it.x, it.y, it.r, angle, it.sutra.color, "#3a2a0c", false);
+        drawBanana(it.x, it.y, it.r, angle, it.sutra.color, "#f7eccb", "#3a2a0c", false);
         ctx.restore();
       }
       drawQuestion(it);
