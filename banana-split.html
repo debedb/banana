@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Banana Split . BANANASUTRA</title>
+<style>
+  :root {
+    --cream: #f4f1e8;
+    --ink: #13110d;
+    --banana: #f2c84b;
+    --shadow: #6b4f2a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    background: var(--ink);
+    color: var(--cream);
+    font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  body {
+    min-height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px;
+  }
+
+  /* Top-left back link */
+  #backLink {
+    position: fixed; top: 12px; left: 14px; z-index: 20;
+    color: var(--cream); opacity: 0.5; text-decoration: none;
+    font-size: 13px; letter-spacing: 0.04em;
+    padding: 4px 8px; border-radius: 8px;
+    transition: opacity 0.15s, background 0.15s;
+  }
+  #backLink:hover { opacity: 0.95; background: rgba(244,241,232,0.07); }
+
+  #game {
+    position: relative;
+    width: min(96vw, 480px);
+    min-height: min(92vh, 720px);
+    background: radial-gradient(120% 90% at 50% 0%, #211c12 0%, #13110d 70%);
+    border-radius: 18px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(244,241,232,0.06);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Heads-up bar */
+  #hud {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px;
+    font-size: 14px; letter-spacing: 0.04em;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.7);
+  }
+  #hud .score { font-weight: bold; font-size: 20px; }
+  #hud .score small { font-weight: normal; opacity: 0.65; font-size: 12px; }
+  #timerWrap { text-align: right; }
+  #timerVal { font-weight: bold; font-size: 22px; color: var(--banana); }
+  #timerVal.low { color: #e88b6a; }
+  #timerVal small { font-weight: normal; opacity: 0.6; font-size: 11px; display: block; }
+  #muteBtn {
+    cursor: pointer;
+    background: rgba(244,241,232,0.08); color: var(--cream);
+    border: 1px solid rgba(244,241,232,0.18); border-radius: 8px;
+    padding: 5px 10px; font-size: 12px; font-family: inherit;
+    margin-left: 12px;
+  }
+
+  /* Timer bar */
+  #timerBar {
+    height: 4px; margin: 0 16px 8px;
+    background: rgba(244,241,232,0.08); border-radius: 999px; overflow: hidden;
+  }
+  #timerFill {
+    height: 100%; width: 100%;
+    background: var(--banana);
+    transition: width 0.2s linear, background 0.3s;
+  }
+
+  /* Play area */
+  #play {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: flex-start;
+    padding: 6px 18px 22px;
+    text-align: center;
+  }
+  #category {
+    font-size: 12px; letter-spacing: 0.32em; text-transform: uppercase;
+    opacity: 0.6; margin-top: 4px; min-height: 16px;
+  }
+  #clue {
+    font-style: italic; opacity: 0.85; font-size: 14px;
+    margin: 8px 0 14px; min-height: 20px; line-height: 1.4;
+    max-width: 340px;
+  }
+  #clue b { color: var(--banana); font-style: normal; }
+
+  /* The answer slots the player is filling */
+  #answer {
+    display: flex; flex-wrap: wrap; justify-content: center;
+    gap: 6px; min-height: 52px; margin-bottom: 10px;
+  }
+  .slot {
+    width: 36px; height: 46px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: bold;
+    border-radius: 8px;
+    color: var(--ink);
+    background: var(--banana);
+    box-shadow: 0 4px 0 #b9952f;
+  }
+  .slot.empty {
+    background: rgba(244,241,232,0.05);
+    color: transparent;
+    box-shadow: inset 0 0 0 1px rgba(244,241,232,0.16);
+  }
+  .slot.gap {
+    width: 14px; background: transparent; box-shadow: none;
+  }
+  .slot.solved {
+    background: #5fb85c; color: #0d2410; box-shadow: 0 4px 0 #3c7a3a;
+  }
+  .slot.wrong {
+    background: #e5564e; color: #2a0c0a; box-shadow: 0 4px 0 #a3322c;
+    animation: shakeX 0.32s;
+  }
+  @keyframes shakeX {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-5px); }
+    40% { transform: translateX(5px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(3px); }
+  }
+
+  /* Scrambled letter tiles to tap */
+  #tiles {
+    display: flex; flex-wrap: wrap; justify-content: center;
+    gap: 8px; max-width: 360px; margin: 8px auto 14px;
+  }
+  .tile {
+    width: 42px; height: 50px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: bold; font-family: inherit;
+    color: var(--cream);
+    background: rgba(244,241,232,0.07);
+    border: 1px solid rgba(244,241,232,0.18);
+    border-radius: 9px;
+    cursor: pointer;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.35);
+    transition: transform 0.06s, box-shadow 0.06s, opacity 0.12s;
+  }
+  .tile:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.35); }
+  .tile.used {
+    opacity: 0.22; pointer-events: none;
+    box-shadow: none; transform: translateY(2px);
+  }
+  .tile.hintpop { background: var(--banana); color: var(--ink); }
+
+  /* Action row */
+  #actions {
+    display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+    margin-top: 2px;
+  }
+  .minibtn {
+    cursor: pointer; font-family: inherit; font-weight: bold;
+    font-size: 13px; letter-spacing: 0.03em;
+    color: var(--cream);
+    background: rgba(244,241,232,0.08);
+    border: 1px solid rgba(244,241,232,0.2);
+    border-radius: 999px;
+    padding: 9px 16px;
+    transition: transform 0.06s, background 0.12s;
+  }
+  .minibtn:active { transform: translateY(2px); }
+  .minibtn.hintbtn { color: var(--banana); border-color: rgba(242,200,75,0.4); }
+  .minibtn:disabled { opacity: 0.35; cursor: default; }
+
+  /* Solved-count / streak line */
+  #statusLine {
+    margin-top: 16px; font-size: 13px; opacity: 0.75; min-height: 18px;
+  }
+  #statusLine b { color: var(--banana); }
+  #flash {
+    margin-top: 8px; font-size: 14px; font-weight: bold; min-height: 20px;
+    opacity: 0; transition: opacity 0.15s;
+  }
+  #flash.good { color: #7cd07a; opacity: 1; }
+  #flash.bad { color: #e88b6a; opacity: 1; }
+
+  /* Overlays */
+  .overlay {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center; padding: 28px;
+    background: rgba(19,17,13,0.86);
+    backdrop-filter: blur(3px);
+    z-index: 5;
+    overflow-y: auto;
+  }
+  .overlay.hidden { display: none; }
+  .logo {
+    font-size: 13px; letter-spacing: 0.42em; opacity: 0.7;
+    margin-bottom: 6px;
+  }
+  .overlay h1 {
+    font-size: clamp(30px, 9vw, 46px);
+    line-height: 1.0; margin-bottom: 8px;
+    color: var(--banana);
+  }
+  .overlay h1 .light { color: var(--banana); }
+  .tagline { font-style: italic; opacity: 0.8; margin-bottom: 20px; font-size: 15px; }
+  .rules {
+    font-size: 14px; line-height: 1.7; opacity: 0.9;
+    max-width: 330px; margin-bottom: 22px;
+  }
+  .rules b { color: var(--banana); }
+  .rules .bad { color: #e88b6a; }
+  .btn {
+    cursor: pointer; font-family: inherit; font-weight: bold;
+    font-size: 17px; letter-spacing: 0.03em;
+    color: var(--ink); background: var(--banana);
+    border: none; border-radius: 999px;
+    padding: 13px 34px;
+    box-shadow: 0 8px 0 #b9952f, 0 12px 22px rgba(0,0,0,0.45);
+    transition: transform 0.06s, box-shadow 0.06s;
+  }
+  .btn:active { transform: translateY(4px); box-shadow: 0 4px 0 #b9952f, 0 8px 14px rgba(0,0,0,0.45); }
+  .bertrand {
+    margin-top: 20px; font-size: 13px; font-style: italic;
+    opacity: 0.78; max-width: 330px; line-height: 1.55;
+  }
+  .bertrand b { color: var(--banana); font-style: normal; }
+  .final-score { font-size: 15px; margin-bottom: 4px; opacity: 0.85; }
+  .final-score b { color: var(--banana); font-size: 30px; display: block; margin-top: 2px; }
+  .hint-text { font-size: 12px; opacity: 0.55; margin-top: 16px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<a id="backLink" href="./index.html">&lt;- all games</a>
+
+<div id="game">
+
+  <div id="hud">
+    <div class="score">SCORE <span id="scoreVal">0</span><br><small>BEST <span id="bestVal">0</span></small></div>
+    <div style="display:flex;align-items:center;">
+      <div id="timerWrap">
+        <span id="timerVal">90</span>
+        <small>SECONDS</small>
+      </div>
+      <button id="muteBtn">SOUND: ON</button>
+    </div>
+  </div>
+  <div id="timerBar"><div id="timerFill"></div></div>
+
+  <div id="play">
+    <div id="category">&nbsp;</div>
+    <div id="clue">&nbsp;</div>
+    <div id="answer"></div>
+    <div id="tiles"></div>
+    <div id="actions">
+      <button class="minibtn" id="backspaceBtn">Backspace</button>
+      <button class="minibtn" id="clearBtn">Clear</button>
+      <button class="minibtn hintbtn" id="hintBtn">Hint (-15)</button>
+      <button class="minibtn" id="skipBtn">Skip</button>
+    </div>
+    <div id="statusLine">Solved <b id="solvedCount">0</b> &nbsp;.&nbsp; Streak <b id="streakCount">0</b></div>
+    <div id="flash">&nbsp;</div>
+  </div>
+
+  <!-- Start screen -->
+  <div class="overlay" id="startScreen">
+    <div class="logo">B A N A N A S U T R A</div>
+    <h1>Banana <span class="light">Split</span></h1>
+    <div class="tagline">Letters in a jumble. Wisdom in a peel.</div>
+    <div class="rules">
+      Each word arrives <b>scrambled</b>.<br>
+      Unscramble it by <b>typing</b> or <b>tapping tiles</b>.<br>
+      Solve it for points and a <b>time bonus</b>.<br>
+      Stuck? A <b>Hint</b> reveals one letter (costs points).<br>
+      The <span class="bad">clock</span> is always running.
+    </div>
+    <button class="btn" id="startBtn">Start splitting</button>
+    <div class="bertrand"><b>Bertrand:</b> Bonjour. The words have, how you say, come apart at the seams. Put them right before the bell, and we shall not make a fool of the fruit.</div>
+    <div class="hint-text">Type letters &amp; Backspace &nbsp;.&nbsp; Enter: submit &nbsp;.&nbsp; M: mute</div>
+  </div>
+
+  <!-- Game over screen -->
+  <div class="overlay hidden" id="overScreen">
+    <div class="logo">B A N A N A S U T R A</div>
+    <h1 id="overTitle">Time!</h1>
+    <div class="final-score">Your score<b id="finalScore">0</b></div>
+    <div class="final-score" id="bestLine" style="opacity:0.7;font-size:13px;"></div>
+    <button class="btn" id="againBtn">Split again</button>
+    <div class="bertrand" id="overBertrand"></div>
+    <div class="hint-text">Press SPACE to play again</div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ----- Word bank: edit freely. {word, category, clue} -----
+  // Only A-Z letters are scrambled; spaces and hyphens stay fixed.
+  var WORDS = [
+    // The seven sutras
+    { word: "KNOWSUTRA", cat: "Sutra", clue: "Is it true?" },
+    { word: "BLOWSUTRA", cat: "Sutra", clue: "Is it fair?" },
+    { word: "SHOWSUTRA", cat: "Sutra", clue: "Is it fun?" },
+    { word: "GROWSUTRA", cat: "Sutra", clue: "Is it brave?" },
+    { word: "FLOWSUTRA", cat: "Sutra", clue: "Is it free?" },
+    { word: "GLOWSUTRA", cat: "Sutra", clue: "Is it full?" },
+    { word: "BOWSUTRA",  cat: "Sutra", clue: "Is it awe?" },
+    // Intention verbs
+    { word: "ASK",   cat: "Intention", clue: "The first brave word." },
+    { word: "SPEAK", cat: "Intention", clue: "Let it be heard." },
+    { word: "PLAY",  cat: "Intention", clue: "Seriously, lighten up." },
+    { word: "DARE",  cat: "Intention", clue: "Edge of the comfort." },
+    { word: "TRUST", cat: "Intention", clue: "Fall, and be caught." },
+    { word: "BLESS", cat: "Intention", clue: "Give the good word." },
+    { word: "BOW",   cat: "Intention", clue: "Awe, made into a gesture." },
+    // Banana puns
+    { word: "BANANA",        cat: "Pun", clue: "The headline fruit." },
+    { word: "A-PEELING",     cat: "Pun", clue: "Quite attractive, no?" },
+    { word: "TOP BANANA",    cat: "Pun", clue: "The one in charge." },
+    { word: "FANANA",        cat: "Pun", clue: "A devoted banana admirer." },
+    { word: "HIDDEN PEELS",  cat: "Pun", clue: "Secret golden bonuses." },
+    { word: "GOING BANANAS", cat: "Pun", clue: "Losing it, deliciously." },
+    { word: "BANANASUTRA",   cat: "Pun", clue: "The whole, ripe philosophy." }
+  ];
+
+  var ROUND_SECONDS = 90;
+  var SOLVE_POINTS = 100;      // base points for solving
+  var TIME_BONUS_SECONDS = 6;  // seconds added on a correct answer
+  var SPEED_BONUS_MAX = 50;    // extra points for solving without hints, scaled by streak
+  var HINT_COST = 15;          // points removed per hint
+  var BEST_KEY = "bss-split-hi";
+
+  // ----- DOM refs -----
+  var el = {
+    scoreVal: document.getElementById("scoreVal"),
+    bestVal: document.getElementById("bestVal"),
+    timerVal: document.getElementById("timerVal"),
+    timerFill: document.getElementById("timerFill"),
+    muteBtn: document.getElementById("muteBtn"),
+    category: document.getElementById("category"),
+    clue: document.getElementById("clue"),
+    answer: document.getElementById("answer"),
+    tiles: document.getElementById("tiles"),
+    backspaceBtn: document.getElementById("backspaceBtn"),
+    clearBtn: document.getElementById("clearBtn"),
+    hintBtn: document.getElementById("hintBtn"),
+    skipBtn: document.getElementById("skipBtn"),
+    solvedCount: document.getElementById("solvedCount"),
+    streakCount: document.getElementById("streakCount"),
+    flash: document.getElementById("flash"),
+    startScreen: document.getElementById("startScreen"),
+    overScreen: document.getElementById("overScreen"),
+    finalScore: document.getElementById("finalScore"),
+    bestLine: document.getElementById("bestLine"),
+    overTitle: document.getElementById("overTitle"),
+    overBertrand: document.getElementById("overBertrand"),
+    startBtn: document.getElementById("startBtn"),
+    againBtn: document.getElementById("againBtn")
+  };
+
+  // ----- State -----
+  var STATE = { MENU: 0, PLAY: 1, OVER: 2 };
+  var state = STATE.MENU;
+
+  var muted = false;
+  var best = parseInt(localStorage.getItem(BEST_KEY) || "0", 10) || 0;
+
+  var score = 0;
+  var solved = 0;
+  var streak = 0;
+  var timeLeft = ROUND_SECONDS;
+
+  var bag = [];          // shuffled queue of word indices
+  var current = null;    // current puzzle model
+  var hintsUsedThisWord = 0;
+
+  // current puzzle structure:
+  //   answer:   the target string (upper, includes spaces/hyphens)
+  //   slots:    array, one per character. {ch, fixed, filled, tileId}
+  //   tiles:    array of tile letters {id, ch, used}
+  //   typed:    ordered list of slot indices the player has filled (for backspace)
+
+  // ----- Audio (WebAudio, no assets) -----
+  var actx = null;
+  function audio() {
+    if (!actx) {
+      try { actx = new (window.AudioContext || window.webkitAudioContext)(); }
+      catch (e) { actx = null; }
+    }
+    var retval = actx;
+    return retval;
+  }
+  function blip(freq, dur, type, vol) {
+    if (muted) return;
+    var a = audio();
+    if (!a) return;
+    var o = a.createOscillator();
+    var g = a.createGain();
+    o.type = type || "sine";
+    o.frequency.value = freq;
+    g.gain.value = vol || 0.18;
+    o.connect(g); g.connect(a.destination);
+    var t = a.currentTime;
+    g.gain.setValueAtTime(g.gain.value, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.start(t); o.stop(t + dur);
+  }
+  function sndTap() { blip(420, 0.05, "triangle", 0.10); }
+  function sndBack() { blip(260, 0.06, "square", 0.10); }
+  function sndWrong() { blip(150, 0.26, "sawtooth", 0.20); blip(110, 0.28, "square", 0.12); }
+  function sndHint() { blip(700, 0.10, "sine", 0.14); }
+  function sndCorrect() {
+    var seq = [660, 880, 1100, 1320];
+    seq.forEach(function (f, i) {
+      setTimeout(function () { blip(f, 0.12, "triangle", 0.16); }, i * 70);
+    });
+  }
+  function sndOver() {
+    var seq = [440, 350, 260, 180];
+    seq.forEach(function (f, i) {
+      setTimeout(function () { blip(f, 0.22, "sine", 0.2); }, i * 130);
+    });
+  }
+
+  function toggleMute() {
+    muted = !muted;
+    el.muteBtn.textContent = "SOUND: " + (muted ? "OFF" : "ON");
+  }
+  el.muteBtn.addEventListener("click", toggleMute);
+
+  // ----- Utils -----
+  function isLetter(ch) {
+    var retval = ch >= "A" && ch <= "Z";
+    return retval;
+  }
+  function shuffleArr(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    }
+    var retval = arr;
+    return retval;
+  }
+  // Scramble only the letters of a word; keep spaces/hyphens in place.
+  // Guarantee the scrambled letters differ from the original ordering
+  // (when more than one distinct letter exists).
+  function scrambleLetters(word) {
+    var letters = [];
+    var i;
+    for (i = 0; i < word.length; i++) {
+      if (isLetter(word.charAt(i))) letters.push(word.charAt(i));
+    }
+    var distinct = {};
+    letters.forEach(function (c) { distinct[c] = true; });
+    var canDiffer = Object.keys(distinct).length > 1;
+
+    var shuffled = letters.slice();
+    var attempts = 0;
+    do {
+      shuffleArr(shuffled);
+      attempts++;
+    } while (canDiffer && sameOrder(shuffled, letters) && attempts < 50);
+
+    // Fallback: if still identical, force a swap of two unequal letters.
+    if (canDiffer && sameOrder(shuffled, letters)) {
+      for (i = 0; i < shuffled.length - 1; i++) {
+        if (shuffled[i] !== shuffled[i + 1]) {
+          var t = shuffled[i]; shuffled[i] = shuffled[i + 1]; shuffled[i + 1] = t;
+          break;
+        }
+      }
+    }
+    var retval = shuffled;
+    return retval;
+  }
+  function sameOrder(a, b) {
+    if (a.length !== b.length) {
+      return false;
+    }
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] !== b[i]) {
+        return false;
+      }
+    }
+    var retval = true;
+    return retval;
+  }
+
+  function refillBag() {
+    var idx = [];
+    for (var i = 0; i < WORDS.length; i++) idx.push(i);
+    shuffleArr(idx);
+    bag = idx;
+  }
+
+  // ----- Build a puzzle -----
+  function nextPuzzle() {
+    if (bag.length === 0) refillBag();
+    var wordIndex = bag.pop();
+    var entry = WORDS[wordIndex];
+    var answer = entry.word.toUpperCase();
+
+    var slots = [];
+    var i;
+    for (i = 0; i < answer.length; i++) {
+      var ch = answer.charAt(i);
+      var fixed = !isLetter(ch);
+      slots.push({ ch: ch, fixed: fixed, filled: fixed, tileId: -1 });
+    }
+
+    var scrambled = scrambleLetters(answer);
+    var tiles = [];
+    for (i = 0; i < scrambled.length; i++) {
+      tiles.push({ id: i, ch: scrambled[i], used: false });
+    }
+
+    current = {
+      answer: answer,
+      cat: entry.cat,
+      clue: entry.clue,
+      slots: slots,
+      tiles: tiles,
+      typed: []
+    };
+    hintsUsedThisWord = 0;
+
+    el.category.textContent = entry.cat;
+    el.clue.innerHTML = entry.clue;
+    renderPuzzle();
+  }
+
+  // ----- Render puzzle -----
+  function renderPuzzle() {
+    // Answer slots
+    el.answer.innerHTML = "";
+    current.slots.forEach(function (s) {
+      var d = document.createElement("div");
+      if (s.fixed && s.ch === " ") {
+        d.className = "slot gap";
+      } else if (s.fixed) {
+        // hyphen or other fixed punctuation: show it
+        d.className = "slot";
+        d.textContent = s.ch;
+      } else if (s.filled) {
+        d.className = "slot";
+        d.textContent = s.ch;
+      } else {
+        d.className = "slot empty";
+        d.textContent = "";
+      }
+      el.answer.appendChild(d);
+    });
+
+    // Scrambled tiles
+    el.tiles.innerHTML = "";
+    current.tiles.forEach(function (t) {
+      var b = document.createElement("button");
+      b.className = "tile" + (t.used ? " used" : "");
+      b.textContent = t.ch;
+      b.setAttribute("type", "button");
+      b.setAttribute("data-id", String(t.id));
+      b.addEventListener("click", function () { onTileClick(t.id); });
+      el.tiles.appendChild(b);
+    });
+
+    el.solvedCount.textContent = String(solved);
+    el.streakCount.textContent = String(streak);
+    el.hintBtn.disabled = !anyEmptySlot();
+  }
+
+  function anyEmptySlot() {
+    var retval = false;
+    for (var i = 0; i < current.slots.length; i++) {
+      if (!current.slots[i].fixed && !current.slots[i].filled) {
+        retval = true;
+        break;
+      }
+    }
+    return retval;
+  }
+
+  function firstEmptySlot() {
+    var retval = -1;
+    for (var i = 0; i < current.slots.length; i++) {
+      if (!current.slots[i].fixed && !current.slots[i].filled) {
+        retval = i;
+        break;
+      }
+    }
+    return retval;
+  }
+
+  function firstAvailableTileWithChar(ch) {
+    var retval = -1;
+    for (var i = 0; i < current.tiles.length; i++) {
+      if (!current.tiles[i].used && current.tiles[i].ch === ch) {
+        retval = i;
+        break;
+      }
+    }
+    return retval;
+  }
+
+  // ----- Placing / removing letters -----
+  function placeTileInSlot(tileId, slotIndex) {
+    var tile = current.tiles[tileId];
+    var slot = current.slots[slotIndex];
+    if (!tile || tile.used || !slot || slot.fixed || slot.filled) return false;
+    slot.ch = tile.ch;
+    slot.filled = true;
+    slot.tileId = tileId;
+    tile.used = true;
+    current.typed.push(slotIndex);
+    return true;
+  }
+
+  function onTileClick(tileId) {
+    if (state !== STATE.PLAY) return;
+    audio();
+    var tile = current.tiles[tileId];
+    if (!tile || tile.used) return;
+    var slotIndex = firstEmptySlot();
+    if (slotIndex < 0) return;
+    placeTileInSlot(tileId, slotIndex);
+    sndTap();
+    renderPuzzle();
+    checkSolved();
+  }
+
+  // Type a letter from the keyboard: find a matching unused tile and place it.
+  function typeChar(ch) {
+    if (state !== STATE.PLAY) return;
+    audio();
+    var slotIndex = firstEmptySlot();
+    if (slotIndex < 0) return;
+    var tileId = firstAvailableTileWithChar(ch);
+    if (tileId < 0) {
+      // No matching tile available: brief reject feedback on the next slot.
+      rejectInput();
+      return;
+    }
+    placeTileInSlot(tileId, slotIndex);
+    sndTap();
+    renderPuzzle();
+    checkSolved();
+  }
+
+  function rejectInput() {
+    var nodes = el.answer.querySelectorAll(".slot.empty");
+    if (nodes.length) {
+      var n = nodes[0];
+      n.classList.remove("empty");
+      n.classList.add("wrong");
+      setTimeout(function () {
+        n.classList.remove("wrong");
+        n.classList.add("empty");
+      }, 320);
+    }
+    sndWrong();
+  }
+
+  function backspace() {
+    if (state !== STATE.PLAY) return;
+    if (current.typed.length === 0) return;
+    var slotIndex = current.typed.pop();
+    var slot = current.slots[slotIndex];
+    if (slot && slot.filled && !slot.fixed) {
+      var tile = current.tiles[slot.tileId];
+      if (tile) tile.used = false;
+      slot.filled = false;
+      slot.tileId = -1;
+      slot.ch = current.answer.charAt(slotIndex); // restore underlying target char (hidden)
+    }
+    sndBack();
+    renderPuzzle();
+  }
+
+  function clearAll() {
+    if (state !== STATE.PLAY) return;
+    while (current.typed.length > 0) {
+      var slotIndex = current.typed.pop();
+      var slot = current.slots[slotIndex];
+      if (slot && slot.filled && !slot.fixed) {
+        var tile = current.tiles[slot.tileId];
+        if (tile) tile.used = false;
+        slot.filled = false;
+        slot.tileId = -1;
+        slot.ch = current.answer.charAt(slotIndex);
+      }
+    }
+    sndBack();
+    renderPuzzle();
+  }
+
+  // ----- Hint: reveal one correct letter into its slot -----
+  function useHint() {
+    if (state !== STATE.PLAY) return;
+    var slotIndex = firstEmptySlot();
+    if (slotIndex < 0) return;
+    var needed = current.answer.charAt(slotIndex);
+    var tileId = firstAvailableTileWithChar(needed);
+    if (tileId < 0) {
+      // The needed tile sits in a later-placed slot; pull it back, then place.
+      reclaimTileForChar(needed);
+      tileId = firstAvailableTileWithChar(needed);
+    }
+    if (tileId < 0) return;
+
+    placeTileInSlot(tileId, slotIndex);
+    hintsUsedThisWord++;
+    score = Math.max(0, score - HINT_COST);
+    updateScore();
+    sndHint();
+    renderPuzzle();
+
+    // pop the just-revealed slot
+    var nodes = el.answer.children;
+    if (nodes[slotIndex]) {
+      nodes[slotIndex].classList.add("solved");
+      setTimeout(function () {
+        if (nodes[slotIndex]) nodes[slotIndex].classList.remove("solved");
+      }, 280);
+    }
+    flash("A peel of insight. (-" + HINT_COST + ")", "bad");
+    checkSolved();
+  }
+
+  // If the tile a hint needs is already used in a wrong position, free it.
+  function reclaimTileForChar(ch) {
+    for (var i = 0; i < current.slots.length; i++) {
+      var slot = current.slots[i];
+      if (!slot.fixed && slot.filled && slot.tileId >= 0) {
+        var tile = current.tiles[slot.tileId];
+        if (tile && tile.ch === ch) {
+          tile.used = false;
+          slot.filled = false;
+          var pos = current.typed.indexOf(i);
+          if (pos >= 0) current.typed.splice(pos, 1);
+          slot.tileId = -1;
+          slot.ch = current.answer.charAt(i);
+          break;
+        }
+      }
+    }
+  }
+
+  // ----- Solve check -----
+  function buildCurrentGuess() {
+    var s = "";
+    for (var i = 0; i < current.slots.length; i++) {
+      var slot = current.slots[i];
+      if (slot.fixed) {
+        s += slot.ch;
+      } else if (slot.filled) {
+        s += slot.ch;
+      } else {
+        s += "_";
+      }
+    }
+    var retval = s;
+    return retval;
+  }
+
+  function allFilled() {
+    var retval = true;
+    for (var i = 0; i < current.slots.length; i++) {
+      if (!current.slots[i].fixed && !current.slots[i].filled) {
+        retval = false;
+        break;
+      }
+    }
+    return retval;
+  }
+
+  function checkSolved() {
+    if (!allFilled()) return;
+    var guess = buildCurrentGuess();
+    if (guess === current.answer) {
+      onCorrect();
+    } else {
+      onIncorrect();
+    }
+  }
+
+  function onCorrect() {
+    state = STATE.PLAY;
+    streak++;
+    solved++;
+
+    var base = SOLVE_POINTS;
+    var speedBonus = hintsUsedThisWord === 0
+      ? Math.min(SPEED_BONUS_MAX, 10 * streak)
+      : 0;
+    var gain = base + speedBonus;
+    score += gain;
+    timeLeft = Math.min(ROUND_SECONDS, timeLeft + TIME_BONUS_SECONDS);
+
+    updateScore();
+    updateTimer();
+    sndCorrect();
+
+    // celebrate the solved word
+    markAllSlots("solved");
+    var msg = "Correct! +" + gain + "  ." + "  +" + TIME_BONUS_SECONDS + "s";
+    if (speedBonus > 0) msg += "  (clean +" + speedBonus + ")";
+    flash(msg, "good");
+
+    // brief pause, then next word
+    state = STATE.PLAY;
+    lockInput(true);
+    setTimeout(function () {
+      lockInput(false);
+      if (state === STATE.PLAY) nextPuzzle();
+    }, 620);
+  }
+
+  function onIncorrect() {
+    streak = 0;
+    updateStatus();
+    sndWrong();
+    markAllSlots("wrong");
+    flash("Not quite. Try the tiles again.", "bad");
+    // After the shake, clear the player-placed letters so they can retry.
+    lockInput(true);
+    setTimeout(function () {
+      clearPlacedOnly();
+      lockInput(false);
+      renderPuzzle();
+    }, 360);
+  }
+
+  function clearPlacedOnly() {
+    while (current.typed.length > 0) {
+      var slotIndex = current.typed.pop();
+      var slot = current.slots[slotIndex];
+      if (slot && slot.filled && !slot.fixed) {
+        var tile = current.tiles[slot.tileId];
+        if (tile) tile.used = false;
+        slot.filled = false;
+        slot.tileId = -1;
+        slot.ch = current.answer.charAt(slotIndex);
+      }
+    }
+  }
+
+  function markAllSlots(cls) {
+    var nodes = el.answer.children;
+    for (var i = 0; i < nodes.length; i++) {
+      if (!current.slots[i].fixed) {
+        nodes[i].classList.remove("empty");
+        nodes[i].classList.add(cls);
+      }
+    }
+  }
+
+  var inputLocked = false;
+  function lockInput(v) { inputLocked = v; }
+
+  function skipWord() {
+    if (state !== STATE.PLAY) return;
+    streak = 0;
+    updateStatus();
+    flash("Skipped. The fruit forgives.", "bad");
+    sndBack();
+    nextPuzzle();
+  }
+
+  // ----- HUD updates -----
+  function updateScore() {
+    el.scoreVal.textContent = String(score);
+    el.bestVal.textContent = String(best);
+  }
+  function updateStatus() {
+    el.solvedCount.textContent = String(solved);
+    el.streakCount.textContent = String(streak);
+    el.hintBtn.disabled = !current || !anyEmptySlot();
+  }
+  function updateTimer() {
+    var shown = Math.ceil(Math.max(0, timeLeft));
+    el.timerVal.textContent = String(shown);
+    var pct = Math.max(0, Math.min(1, timeLeft / ROUND_SECONDS));
+    el.timerFill.style.width = (pct * 100) + "%";
+    var low = timeLeft <= 10;
+    el.timerVal.classList.toggle("low", low);
+    el.timerFill.style.background = low ? "#e88b6a" : "var(--banana)";
+  }
+
+  var flashTimer = null;
+  function flash(text, kind) {
+    el.flash.textContent = text;
+    el.flash.className = kind === "good" ? "good" : "bad";
+    if (flashTimer) clearTimeout(flashTimer);
+    flashTimer = setTimeout(function () {
+      el.flash.className = "";
+      el.flash.textContent = " ";
+    }, 1500);
+  }
+
+  // ----- Timer loop -----
+  var lastT = 0;
+  function frame(t) {
+    var dt = lastT ? Math.min((t - lastT) / 1000, 0.1) : 0;
+    lastT = t;
+    if (state === STATE.PLAY) {
+      timeLeft -= dt;
+      if (timeLeft <= 0) {
+        timeLeft = 0;
+        updateTimer();
+        endGame();
+      } else {
+        updateTimer();
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  // ----- Keyboard input -----
+  window.addEventListener("keydown", function (e) {
+    // Global shortcuts
+    if (e.key === "m" || e.key === "M") {
+      toggleMute();
+      return;
+    }
+    if (e.key === " " || e.code === "Space") {
+      if (state === STATE.MENU || state === STATE.OVER) {
+        startGame();
+        e.preventDefault();
+        return;
+      }
+    }
+    if (state !== STATE.PLAY || inputLocked) return;
+
+    if (e.key === "Backspace") {
+      backspace();
+      e.preventDefault();
+      return;
+    }
+    if (e.key === "Enter") {
+      // If fully filled, evaluate; otherwise ignore.
+      if (allFilled()) checkSolved();
+      e.preventDefault();
+      return;
+    }
+    if (e.key === "Escape") {
+      clearAll();
+      e.preventDefault();
+      return;
+    }
+    if (e.key && e.key.length === 1) {
+      var ch = e.key.toUpperCase();
+      if (isLetter(ch)) {
+        typeChar(ch);
+        e.preventDefault();
+      }
+    }
+  });
+
+  // ----- Button wiring -----
+  el.backspaceBtn.addEventListener("click", function () { if (!inputLocked) backspace(); });
+  el.clearBtn.addEventListener("click", function () { if (!inputLocked) clearAll(); });
+  el.hintBtn.addEventListener("click", function () { if (!inputLocked) useHint(); });
+  el.skipBtn.addEventListener("click", function () { if (!inputLocked) skipWord(); });
+
+  el.startBtn.addEventListener("click", startGame);
+  el.againBtn.addEventListener("click", startGame);
+
+  // ----- Screen transitions -----
+  function show(node) { node.classList.remove("hidden"); }
+  function hide(node) { node.classList.add("hidden"); }
+
+  function startGame() {
+    audio(); // unlock on user gesture
+    score = 0;
+    solved = 0;
+    streak = 0;
+    timeLeft = ROUND_SECONDS;
+    inputLocked = false;
+    refillBag();
+    updateScore();
+    updateTimer();
+    el.flash.className = "";
+    el.flash.textContent = " ";
+    hide(el.startScreen);
+    hide(el.overScreen);
+    state = STATE.PLAY;
+    nextPuzzle();
+  }
+
+  function endGame() {
+    if (state === STATE.OVER) return;
+    state = STATE.OVER;
+    sndOver();
+    if (score > best) {
+      best = score;
+      localStorage.setItem(BEST_KEY, String(best));
+    }
+    updateScore();
+    el.finalScore.textContent = String(score);
+    el.overTitle.textContent = titleFor(score, solved);
+    el.bestLine.textContent = "Solved: " + solved + "   .   Best score: " + best;
+    el.overBertrand.innerHTML = "<b>Bertrand:</b> " + bertrandFor(score, solved);
+    show(el.overScreen);
+  }
+
+  function titleFor(s, n) {
+    if (s >= 900) return "Top Banana!";
+    if (s >= 500) return "Fully Ripe!";
+    if (s >= 200) return "Nicely Unpeeled!";
+    var retval = n > 0 ? "A Decent Bunch" : "Time!";
+    return retval;
+  }
+  function bertrandFor(s, n) {
+    if (s >= 900) {
+      return "Extraordinaire. You unscrambled the cosmos and left not a letter out of place. The fruit is, frankly, intimidated.";
+    }
+    if (s >= 500) {
+      return "Tres bien arrange, mon ami. The words fell into order as if they had always longed to.";
+    }
+    if (s >= 200) {
+      return "A respectable splitting. A few letters wriggled free, but the bunch holds together.";
+    }
+    if (n > 0) {
+      return "We have made a start. Even a great chef once mis-sliced the banana. Encore, oui?";
+    }
+    var retval = "The clock, she is merciless. But the tiles, they will wait for you. Try once more, s'il vous plait.";
+    return retval;
+  }
+
+  // ----- Init -----
+  updateScore();
+  updateTimer();
+})();
+</script>
+</body>
+</html>
