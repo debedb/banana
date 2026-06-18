@@ -3,11 +3,121 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="refresh" content="0; url=./bananasutra-catch.html">
-<title>BANANASUTRA Games</title>
-<link rel="canonical" href="./bananasutra-catch.html">
+<title>Games · BANANASUTRA</title>
+<meta name="description" content="A little arcade of banana games on the BANANASUTRA theme: catch, sort, hop, match, ask, and unscramble your way through the seven sutras.">
+<style>
+  :root { --cream:#f4f1e8; --ink:#13110d; --banana:#f2c84b; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html, body { min-height:100%; }
+  body {
+    background: radial-gradient(130% 90% at 50% -10%, #221c12 0%, #13110d 70%);
+    color: var(--cream);
+    font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding: 40px 18px 60px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  header { text-align:center; margin-bottom: 34px; max-width: 760px; }
+  .kicker { font-size:12px; letter-spacing:0.42em; opacity:0.7; margin-bottom:12px; }
+  h1 {
+    font-size: clamp(40px, 11vw, 76px); line-height:0.9; color: var(--banana);
+    letter-spacing: -0.01em;
+  }
+  h1 .small { display:block; font-size: 0.32em; letter-spacing:0.2em; color:var(--cream);
+    opacity:0.85; margin-top:14px; font-weight:normal; }
+  .tagline { font-style:italic; opacity:0.8; margin-top:14px; font-size:16px; }
+
+  .grid {
+    display:grid; gap:16px; width:100%; max-width: 760px;
+    grid-template-columns: repeat(2, 1fr);
+  }
+  @media (max-width:560px){ .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    display:flex; gap:14px; align-items:center;
+    text-decoration:none; color:inherit;
+    background: rgba(244,241,232,0.04);
+    border: 1px solid rgba(244,241,232,0.10);
+    border-left: 4px solid var(--accent, var(--banana));
+    border-radius: 14px; padding: 16px 18px;
+    transition: transform 0.08s ease, background 0.15s ease, box-shadow 0.15s ease;
+  }
+  .card:hover {
+    transform: translateY(-3px);
+    background: rgba(244,241,232,0.07);
+    box-shadow: 0 14px 30px rgba(0,0,0,0.45);
+  }
+  .card .art { flex:0 0 auto; }
+  .card .txt h2 { font-size:19px; margin-bottom:3px; }
+  .card .txt p { font-size:13px; opacity:0.72; line-height:1.45; }
+  .card .tag { font-size:11px; letter-spacing:0.12em; opacity:0.5; text-transform:uppercase; }
+
+  footer { margin-top:40px; text-align:center; font-size:13px; opacity:0.6; line-height:1.9; }
+  footer a { color: var(--banana); text-decoration:none; }
+  footer a:hover { text-decoration:underline; }
+  .bertrand { margin-top:22px; font-style:italic; font-size:13px; opacity:0.75; max-width:520px; text-align:center; }
+  .bertrand b { color:var(--banana); font-style:normal; }
+</style>
 </head>
 <body>
-<p>Redirecting to <a href="./bananasutra-catch.html">Banana Catch</a>...</p>
+  <header>
+    <div class="kicker">B A N A N A S U T R A</div>
+    <h1>Banana Games<span class="small">A little arcade for a world gone bananas</span></h1>
+    <div class="tagline">Six ways to play through the seven sutras.</div>
+  </header>
+
+  <main class="grid" id="grid"></main>
+
+  <div class="bertrand"><b>Bertrand:</b> Pick a peel, mon ami. Each one opens a different door.</div>
+
+  <footer>
+    Lyrics &amp; philosophy at <a href="https://bananasutra.com/">bananasutra.com</a><br>
+    Built playful. No backend, no algorithm. Just bananas.
+  </footer>
+
+<script>
+  // Each game is a self-contained page in this same folder.
+  var GAMES = [
+    { file: "bananasutra-catch.html", title: "Banana Catch", tag: "Arcade",
+      desc: "Catch the LIGHT, dodge the SHADOW. Each banana wears a sutra question.", color: "#f2c84b" },
+    { file: "sutra-sorter.html", title: "Sutra Sorter", tag: "Sort",
+      desc: "A question falls. Drop it into the sutra it belongs to.", color: "#4fb0e6" },
+    { file: "be-the-fool.html", title: "Be the Fool", tag: "Runner",
+      desc: "One-button tightrope over the abyss. Embrace the cracks.", color: "#5fb85c" },
+    { file: "hidden-peels.html", title: "Hidden Peels", tag: "Memory",
+      desc: "Flip the peels. Match each sutra to its question.", color: "#a877d8" },
+    { file: "ask-bertrand.html", title: "Ask Bertrand", tag: "Oracle",
+      desc: "Consult the Banana Butler. He answers through a sutra lens.", color: "#e5564e" },
+    { file: "banana-split.html", title: "Banana Split", tag: "Words",
+      desc: "Unscramble the sutras and the puns against the clock.", color: "#f2933c" }
+  ];
+
+  // A small curved-banana glyph, tinted per card.
+  function bananaSVG(color) {
+    var svg =
+      '<svg class="art" width="46" height="46" viewBox="0 0 46 46" aria-hidden="true">' +
+      '<path d="M9 14 C9 30 18 38 33 37 C26 36 19 29 18 16 C17 13 12 12 9 14 Z" fill="' + color + '"/>' +
+      '<path d="M12 15 C13 27 20 33 30 34 C23 31 19 24 18 16 C16 14 14 14 12 15 Z" fill="#f7eccb" opacity="0.85"/>' +
+      '<circle cx="33.4" cy="36.6" r="1.7" fill="#2e2110"/>' +
+      '</svg>';
+    return svg;
+  }
+
+  var grid = document.getElementById("grid");
+  var html = "";
+  for (var i = 0; i < GAMES.length; i++) {
+    var g = GAMES[i];
+    html +=
+      '<a class="card" href="./' + g.file + '" style="--accent:' + g.color + '">' +
+        bananaSVG(g.color) +
+        '<div class="txt">' +
+          '<div class="tag">' + g.tag + '</div>' +
+          '<h2>' + g.title + '</h2>' +
+          '<p>' + g.desc + '</p>' +
+        '</div>' +
+      '</a>';
+  }
+  grid.innerHTML = html;
+</script>
 </body>
 </html>
