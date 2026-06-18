@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ask Bertrand . BANANASUTRA</title>
+<style>
+  :root {
+    --cream: #f4f1e8;
+    --ink: #13110d;
+    --banana: #f2c84b;
+    --shadow: #6b4f2a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    min-height: 100%;
+    background: var(--ink);
+    color: var(--cream);
+    font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 16px 12px 40px;
+  }
+
+  /* Subtle top-left back link */
+  .back {
+    position: fixed;
+    top: 12px; left: 14px;
+    z-index: 20;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    color: rgba(244,241,232,0.55);
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: color 0.15s, background 0.15s;
+  }
+  .back:hover { color: var(--cream); background: rgba(244,241,232,0.07); }
+
+  #game {
+    position: relative;
+    width: min(96vw, 480px);
+    margin-top: 36px;
+    background: radial-gradient(120% 70% at 50% 0%, #211c12 0%, #13110d 72%);
+    border-radius: 18px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(244,241,232,0.06);
+    overflow: hidden;
+    padding: 22px 20px 24px;
+  }
+
+  /* Header */
+  .logo {
+    font-size: 12px; letter-spacing: 0.42em; opacity: 0.7;
+    text-align: center; margin-bottom: 6px;
+  }
+  h1 {
+    font-size: clamp(28px, 8vw, 40px);
+    line-height: 1.0; text-align: center;
+    color: var(--banana); margin-bottom: 6px;
+  }
+  .tagline {
+    font-style: italic; opacity: 0.8;
+    text-align: center; font-size: 14px;
+    margin-bottom: 18px;
+  }
+
+  /* Mute toggle, mirrors the catcher */
+  #muteBtn {
+    position: absolute; top: 12px; right: 14px;
+    cursor: pointer;
+    background: rgba(244,241,232,0.08); color: var(--cream);
+    border: 1px solid rgba(244,241,232,0.18); border-radius: 8px;
+    padding: 4px 9px; font-size: 12px; font-family: inherit;
+    letter-spacing: 0.03em;
+  }
+
+  /* The oracle stage */
+  .oracle {
+    position: relative;
+    background: rgba(0,0,0,0.28);
+    border: 1px solid rgba(244,241,232,0.08);
+    border-radius: 14px;
+    padding: 20px 18px;
+    min-height: 168px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    margin-bottom: 18px;
+    overflow: hidden;
+  }
+  /* Bertrand crest: a CSS banana-crescent badge, no images */
+  .crest {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #2a2415, #16130d);
+    border: 1px solid rgba(242,200,75,0.35);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 12px;
+    flex: none;
+  }
+  .crest .peel {
+    width: 30px; height: 30px;
+    position: relative;
+  }
+  /* crescent drawn from two offset circles */
+  .crest .peel::before,
+  .crest .peel::after {
+    content: ""; position: absolute; border-radius: 50%;
+  }
+  .crest .peel::before {
+    width: 30px; height: 30px;
+    background: var(--banana);
+    top: 0; left: 0;
+  }
+  .crest .peel::after {
+    width: 26px; height: 26px;
+    background: radial-gradient(circle at 35% 30%, #2a2415, #16130d);
+    top: -5px; left: 9px;
+  }
+
+  .prompt-line {
+    font-style: italic;
+    opacity: 0.8;
+    font-size: 14px;
+    line-height: 1.5;
+    max-width: 320px;
+  }
+  .prompt-line b { color: var(--banana); font-style: normal; }
+
+  /* Answer block */
+  .answer { width: 100%; max-width: 360px; }
+  .lens {
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+  }
+  .lens .sname { font-weight: bold; }
+  .lens .squestion { font-style: italic; opacity: 0.95; }
+  .askecho {
+    font-size: 12px;
+    opacity: 0.55;
+    font-style: italic;
+    margin-bottom: 10px;
+    word-break: break-word;
+  }
+  .verdict {
+    font-size: clamp(18px, 5.4vw, 23px);
+    font-weight: bold;
+    line-height: 1.25;
+    margin-bottom: 8px;
+  }
+  .pun {
+    font-size: 13px;
+    font-style: italic;
+    opacity: 0.85;
+    line-height: 1.45;
+  }
+  .pun .by { color: var(--banana); font-style: normal; font-weight: bold; }
+
+  /* peel / shake reveal */
+  @keyframes peelIn {
+    0%   { opacity: 0; transform: translateY(10px) rotate(-2.2deg) scale(0.96); }
+    55%  { opacity: 1; transform: translateY(-2px) rotate(0.8deg) scale(1.01); }
+    100% { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
+  }
+  @keyframes crestShake {
+    0%, 100% { transform: rotate(0); }
+    20% { transform: rotate(-10deg); }
+    40% { transform: rotate(8deg); }
+    60% { transform: rotate(-6deg); }
+    80% { transform: rotate(4deg); }
+  }
+  .answer.reveal { animation: peelIn 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+  .crest.shake { animation: crestShake 0.5s ease; }
+
+  /* Input row */
+  .ask-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  #q {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-family: inherit;
+    font-size: 16px;
+    color: var(--cream);
+    background: rgba(244,241,232,0.06);
+    border: 1px solid rgba(244,241,232,0.18);
+    border-radius: 999px;
+    padding: 13px 18px;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  #q::placeholder { color: rgba(244,241,232,0.4); }
+  #q:focus { border-color: rgba(242,200,75,0.6); background: rgba(244,241,232,0.09); }
+
+  .btn {
+    cursor: pointer; font-family: inherit; font-weight: bold;
+    font-size: 16px; letter-spacing: 0.03em;
+    color: var(--ink); background: var(--banana);
+    border: none; border-radius: 999px;
+    padding: 13px 26px;
+    flex: none;
+    box-shadow: 0 6px 0 #b9952f, 0 10px 18px rgba(0,0,0,0.45);
+    transition: transform 0.06s, box-shadow 0.06s;
+  }
+  .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #b9952f, 0 6px 12px rgba(0,0,0,0.45); }
+
+  .nudge {
+    font-size: 12px;
+    text-align: center;
+    color: #e0a07f;
+    min-height: 16px;
+    margin-bottom: 6px;
+    transition: opacity 0.2s;
+    opacity: 0;
+  }
+  .nudge.show { opacity: 1; }
+
+  .hint {
+    font-size: 11px; opacity: 0.5;
+    text-align: center; margin-top: 4px;
+  }
+
+  /* History */
+  .history-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 22px 0 8px;
+    font-size: 12px; letter-spacing: 0.12em;
+    opacity: 0.6;
+  }
+  #clearBtn {
+    cursor: pointer; font-family: inherit;
+    background: transparent; color: rgba(244,241,232,0.5);
+    border: 1px solid rgba(244,241,232,0.16); border-radius: 8px;
+    padding: 3px 8px; font-size: 11px; letter-spacing: 0.04em;
+  }
+  #clearBtn:hover { color: var(--cream); border-color: rgba(244,241,232,0.3); }
+  #clearBtn:disabled { opacity: 0.3; cursor: default; }
+
+  #history {
+    list-style: none;
+    max-height: 220px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  #history::-webkit-scrollbar { width: 8px; }
+  #history::-webkit-scrollbar-thumb {
+    background: rgba(244,241,232,0.16); border-radius: 8px;
+  }
+  #history li {
+    border-left: 3px solid var(--banana);
+    background: rgba(244,241,232,0.04);
+    border-radius: 0 10px 10px 0;
+    padding: 9px 12px;
+    margin-bottom: 8px;
+  }
+  #history .h-q {
+    font-size: 13px; opacity: 0.92; margin-bottom: 3px;
+    word-break: break-word;
+  }
+  #history .h-q::before { content: "Q: "; opacity: 0.5; }
+  #history .h-lens {
+    font-size: 11px; letter-spacing: 0.03em; margin-bottom: 2px;
+  }
+  #history .h-v {
+    font-size: 13px; font-weight: bold; line-height: 1.3;
+  }
+  .empty {
+    font-size: 12px; font-style: italic; opacity: 0.4;
+    text-align: center; padding: 8px 0;
+  }
+</style>
+</head>
+<body>
+<a class="back" href="./index.html">&lt;- all games</a>
+
+<div id="game">
+  <button id="muteBtn">SOUND: ON</button>
+
+  <div class="logo">B A N A N A S U T R A</div>
+  <h1>Ask Bertrand</h1>
+  <div class="tagline">The Banana Butler consults the seven lenses.</div>
+
+  <div class="oracle" id="oracle">
+    <div class="crest" id="crest"><span class="peel"></span></div>
+    <div class="prompt-line" id="prompt">
+      <b>Bertrand:</b> Ah, you have arrived. Pose me a yes-or-no question, and I shall turn it under whichever lens the fruit bowl favors.
+    </div>
+  </div>
+
+  <div class="nudge" id="nudge"></div>
+
+  <div class="ask-row">
+    <input id="q" type="text" autocomplete="off" spellcheck="false"
+           placeholder="Ask a yes / no question..." maxlength="160"
+           aria-label="Your yes or no question">
+    <button class="btn" id="askBtn">Ask</button>
+  </div>
+  <div class="hint">Type a question, then press Enter or tap Ask &nbsp;.&nbsp; M: mute</div>
+
+  <div class="history-head">
+    <span>RECENT CONSULTATIONS</span>
+    <button id="clearBtn" disabled>Clear</button>
+  </div>
+  <ul id="history">
+    <li class="empty" id="emptyNote">No questions yet. The fruit bowl is patient.</li>
+  </ul>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ----- The seven sutras: the lenses Bertrand peers through -----
+  var SUTRAS = [
+    { name: "KNOW", q: "Is it true?",  color: "#4fb0e6" },
+    { name: "BLOW", q: "Is it fair?",  color: "#e5564e" },
+    { name: "SHOW", q: "Is it fun?",   color: "#f2933c" },
+    { name: "GROW", q: "Is it brave?", color: "#5fb85c" },
+    { name: "FLOW", q: "Is it free?",  color: "#3fc9c2" },
+    { name: "GLOW", q: "Is it full?",  color: "#f2c84b" },
+    { name: "BOW",  q: "Is it awe?",   color: "#a877d8" }
+  ];
+
+  // ----- Verdicts, in Bertrand's wry register. Three temperaments. -----
+  var VERDICTS = {
+    yes: [
+      "Yes. Decidedly, unpeelably yes.",
+      "Indeed yes. The pantry agrees, and the pantry rarely lies.",
+      "Yes, mon ami. I would stake my finest tray upon it.",
+      "But of course. Ripe, ready, and yours.",
+      "Yes. Even the most cautious banana is nodding.",
+      "Affirmative. Proceed with a spring in your step.",
+      "Yes. The lens shows nothing but a clear, sunny window."
+    ],
+    no: [
+      "No. Firmly, and with a polite little bow, no.",
+      "Alas, no. This one is bruised to the core.",
+      "No, I am afraid. Best leave it in the bowl.",
+      "Regrettably no. The lens fogs at the very thought.",
+      "No. Not today, perhaps not this whole bunch.",
+      "I must say no. A butler knows a slippery floor when he sees one.",
+      "No. Set it down gently and walk away."
+    ],
+    maybe: [
+      "Hmm. Ask again once the matter has ripened.",
+      "The lens is cloudy. Pose it to me later, oui?",
+      "Neither yes nor no. The fruit is still green here.",
+      "Uncertain. Even my best tray wobbles on this one.",
+      "Reserve judgment. Sleep on it, then ask anew.",
+      "The bowl shrugs, most elegantly. Try again shortly.",
+      "I cannot say yet. The peel has not finished turning."
+    ]
+  };
+
+  // ----- Banana puns, delivered as a closing flourish -----
+  var PUNS = [
+    "Let us not split hairs over it.",
+    "That is simply how the banana bends.",
+    "I find the whole affair quite a-peeling.",
+    "Go forth, and stay on the ripe side of things.",
+    "One must always handle such matters with a firm but gentle peel.",
+    "No need to go bananas; the answer keeps.",
+    "A wise soul never slips on the obvious.",
+    "Bunch up your courage and carry on.",
+    "Yellow is the colour of clarity, after all.",
+    "Top of the bunch to you, whatever you choose.",
+    "Even a curved path gets the fruit to the bowl.",
+    "Do mind the peel on your way out.",
+    "Ripeness, like good timing, is everything.",
+    "I shall be here, polishing the tray, should you need me again."
+  ];
+
+  // ----- Bias each lens toward a flavour of answer (still random) -----
+  // The lens colours the mood; the dice still roll.
+  var LENS_BIAS = {
+    KNOW: ["yes", "no", "maybe", "yes", "no"],
+    BLOW: ["no", "yes", "no", "maybe", "yes"],
+    SHOW: ["yes", "yes", "maybe", "no", "yes"],
+    GROW: ["yes", "yes", "no", "maybe", "yes"],
+    FLOW: ["yes", "maybe", "yes", "no", "maybe"],
+    GLOW: ["yes", "yes", "yes", "no", "maybe"],
+    BOW:  ["yes", "maybe", "no", "yes", "maybe"]
+  };
+
+  // ----- DOM handles -----
+  var input = document.getElementById("q");
+  var askBtn = document.getElementById("askBtn");
+  var oracle = document.getElementById("oracle");
+  var crest = document.getElementById("crest");
+  var promptEl = document.getElementById("prompt");
+  var nudge = document.getElementById("nudge");
+  var historyEl = document.getElementById("history");
+  var emptyNote = document.getElementById("emptyNote");
+  var clearBtn = document.getElementById("clearBtn");
+  var muteBtn = document.getElementById("muteBtn");
+
+  var history = [];
+  var MAX_HISTORY = 24;
+
+  // ----- Audio (WebAudio, no assets), unlocked on first gesture -----
+  var actx = null;
+  var muted = false;
+
+  function audio() {
+    if (!actx) {
+      try { actx = new (window.AudioContext || window.webkitAudioContext)(); }
+      catch (e) { actx = null; }
+    }
+    return actx;
+  }
+
+  function blip(freq, dur, type, vol) {
+    if (muted) return;
+    var a = audio();
+    if (!a) return;
+    var o = a.createOscillator();
+    var g = a.createGain();
+    o.type = type || "sine";
+    o.frequency.value = freq;
+    g.gain.value = vol || 0.16;
+    o.connect(g); g.connect(a.destination);
+    var t = a.currentTime;
+    g.gain.setValueAtTime(g.gain.value, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.start(t); o.stop(t + dur);
+  }
+
+  // A small chime when the answer appears. Tone tints by verdict mood.
+  function sndReveal(verdictClass) {
+    var seq;
+    if (verdictClass === "yes") seq = [523, 659, 784];
+    else if (verdictClass === "no") seq = [392, 294];
+    else seq = [494, 440, 523];
+    seq.forEach(function (f, i) {
+      setTimeout(function () { blip(f, 0.16, "triangle", 0.15); }, i * 80);
+    });
+  }
+
+  function toggleMute() {
+    muted = !muted;
+    muteBtn.textContent = "SOUND: " + (muted ? "OFF" : "ON");
+  }
+  muteBtn.addEventListener("click", toggleMute);
+
+  // ----- Utilities -----
+  function pick(arr) {
+    var r = arr[(Math.random() * arr.length) | 0];
+    return r;
+  }
+
+  function escapeHtml(str) {
+    var div = document.createElement("div");
+    div.textContent = str;
+    var retval = div.innerHTML;
+    return retval;
+  }
+
+  // ----- Core: consult an oracle reading from local data only -----
+  function consult(question) {
+    var sutra = pick(SUTRAS);
+    var verdictClass = pick(LENS_BIAS[sutra.name]);
+    var verdictText = pick(VERDICTS[verdictClass]);
+    var pun = pick(PUNS);
+    var reading = {
+      question: question,
+      sutra: sutra,
+      verdictClass: verdictClass,
+      verdictText: verdictText,
+      pun: pun
+    };
+    return reading;
+  }
+
+  function renderReading(r) {
+    var color = r.sutra.color;
+    var html =
+      '<div class="answer">' +
+        '<div class="lens" style="color:' + color + '">' +
+          'Through <span class="sname">' + r.sutra.name + 'sutra</span> ' +
+          '<span class="squestion">' + r.sutra.q + '</span>' +
+        '</div>' +
+        '<div class="askecho">you asked: "' + escapeHtml(r.question) + '"</div>' +
+        '<div class="verdict">' + escapeHtml(r.verdictText) + '</div>' +
+        '<div class="pun"><span class="by">Bertrand:</span> ' + escapeHtml(r.pun) + '</div>' +
+      '</div>';
+
+    oracle.innerHTML =
+      '<div class="crest" id="crest"><span class="peel"></span></div>' + html;
+
+    // re-bind crest and replay the reveal animations
+    crest = document.getElementById("crest");
+    var ansEl = oracle.querySelector(".answer");
+    // force reflow so the animation restarts each time
+    void ansEl.offsetWidth;
+    ansEl.classList.add("reveal");
+    crest.classList.add("shake");
+  }
+
+  function renderHistory() {
+    if (history.length === 0) {
+      historyEl.innerHTML = '<li class="empty">No questions yet. The fruit bowl is patient.</li>';
+      clearBtn.disabled = true;
+      return;
+    }
+    clearBtn.disabled = false;
+    var parts = [];
+    for (var i = 0; i < history.length; i++) {
+      var h = history[i];
+      var item =
+        '<li>' +
+          '<div class="h-q">' + escapeHtml(h.question) + '</div>' +
+          '<div class="h-lens" style="color:' + h.sutra.color + '">' +
+            h.sutra.name + 'sutra &mdash; ' + h.sutra.q +
+          '</div>' +
+          '<div class="h-v" style="color:' + h.sutra.color + '">' +
+            escapeHtml(h.verdictText) +
+          '</div>' +
+        '</li>';
+      parts.push(item);
+    }
+    historyEl.innerHTML = parts.join("");
+    historyEl.scrollTop = 0;
+  }
+
+  function showNudge(text) {
+    nudge.textContent = text;
+    nudge.classList.add("show");
+  }
+  function clearNudge() {
+    nudge.classList.remove("show");
+  }
+
+  // ----- Submit handling -----
+  function ask() {
+    audio(); // unlock audio on this user gesture
+    var raw = input.value;
+    var question = raw.replace(/\s+/g, " ").trim();
+
+    if (question.length === 0) {
+      showNudge("Bertrand: A question first, if you please. I cannot read an empty bowl.");
+      input.focus();
+      return;
+    }
+
+    clearNudge();
+    var reading = consult(question);
+    renderReading(reading);
+    sndReveal(reading.verdictClass);
+
+    // newest first, capped
+    history.unshift(reading);
+    if (history.length > MAX_HISTORY) history.pop();
+    renderHistory();
+
+    input.value = "";
+    input.focus();
+  }
+
+  function clearHistory() {
+    history = [];
+    renderHistory();
+    input.focus();
+  }
+
+  askBtn.addEventListener("click", ask);
+  clearBtn.addEventListener("click", clearHistory);
+
+  input.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      ask();
+    }
+  });
+  input.addEventListener("input", clearNudge);
+
+  // Global M to mute, but not while typing in the field
+  window.addEventListener("keydown", function (e) {
+    if (document.activeElement === input) return;
+    if (e.key === "m" || e.key === "M") toggleMute();
+  });
+
+  input.focus();
+})();
+</script>
+</body>
+</html>
