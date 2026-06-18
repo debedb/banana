@@ -265,6 +265,8 @@
       sway: rand(0, Math.PI * 2),
       swayAmt: rand(0, W * 0.018),
       spin: rand(-0.5, 0.5),
+      rot: rand(0, Math.PI * 2),
+      spinRate: rand(-0.7, 0.7),
       kind: kind, sutra: sutra
     });
   }
@@ -426,7 +428,7 @@
       var it = items[i];
       it.y += it.vy * dt;
       it.sway += dt * 2;
-      it.spin += dt * 0.6;
+      it.rot += it.spinRate * dt;
       if (caught(it)) {
         onCatch(it);
         items.splice(i, 1);
@@ -461,83 +463,109 @@
   }
 
   // ----- Render -----
-  // Half-peeled banana: colored peel flaps splay down (carry the sutra color),
-  // pale fruit pokes up out of the opening.
+  // Half-peeled CURVED banana. The body is a crescent: the lower stretch keeps
+  // its peel (carries the sutra color), the open end shows pale flesh with a
+  // couple of curled peel strips. Each item is rotated for a varied orientation.
   function drawBanana(x, y, r, angle, peel, flesh, dark, rotten) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
     ctx.lineJoin = "round";
+    ctx.lineCap = "round";
 
-    var baseY = r * 0.12;
-    var halfW = r * 0.34;
+    var cx = 0, cy = r * 0.62;          // arc center sits below -> crescent curves up
+    var Ro = r * 1.28, Ri = r * 0.86;   // outer / inner radius = banana thickness
+    var t0 = Math.PI * 1.14;            // open (flesh) end
+    var t1 = Math.PI * 1.86;            // stem end
+    var tMid = Math.PI * 1.44;          // flesh / peel boundary
+    var Rm = (Ro + Ri) / 2;
 
-    // one peel flap = tapered leaf from the opening down to a tip
-    function flap(tipX, tipY) {
+    function ptAt(t) {
+      var p = { x: cx + Rm * Math.cos(t), y: cy + Rm * Math.sin(t) };
+      return p;
+    }
+    function crescent(ro, ri, a0, a1) {
       ctx.beginPath();
-      ctx.moveTo(-halfW, baseY);
-      ctx.quadraticCurveTo(tipX * 0.6 - r * 0.15, (baseY + tipY) * 0.5, tipX, tipY);
-      ctx.quadraticCurveTo(tipX * 0.6 + r * 0.15, (baseY + tipY) * 0.5, halfW, baseY);
+      ctx.arc(cx, cy, ro, a0, a1, false);
+      ctx.arc(cx, cy, ri, a1, a0, true);
+      ctx.closePath();
+    }
+
+    // curled peel strips hanging off the open end (drawn behind the body)
+    var base = ptAt(t0);
+    function strip(dxg, dyg, len) {
+      var tipx = base.x + dxg * r * len;
+      var tipy = base.y + dyg * r * len;
+      var w = r * 0.18;
+      ctx.beginPath();
+      ctx.moveTo(base.x - w, base.y - w * 0.4);
+      ctx.quadraticCurveTo(base.x + dxg * r * len * 0.4 - r * 0.18, base.y + dyg * r * len * 0.5, tipx, tipy);
+      ctx.quadraticCurveTo(base.x + dxg * r * len * 0.4 + r * 0.12, base.y + dyg * r * len * 0.5, base.x + w, base.y + w * 0.4);
       ctx.closePath();
       ctx.fillStyle = peel;
       ctx.fill();
-      // shaded inner edge so flaps read as separate
-      ctx.fillStyle = "rgba(0,0,0,0.10)";
+      ctx.fillStyle = "rgba(0,0,0,0.14)";
       ctx.beginPath();
-      ctx.moveTo(0, baseY);
-      ctx.quadraticCurveTo(tipX * 0.55, (baseY + tipY) * 0.5, tipX, tipY);
-      ctx.quadraticCurveTo(tipX * 0.62, (baseY + tipY) * 0.5, halfW * 0.5, baseY);
+      ctx.moveTo(base.x, base.y);
+      ctx.quadraticCurveTo(base.x + dxg * r * len * 0.45, base.y + dyg * r * len * 0.5, tipx, tipy);
+      ctx.quadraticCurveTo(base.x + dxg * r * len * 0.45 + r * 0.1, base.y + dyg * r * len * 0.5, base.x + w * 0.4, base.y + w * 0.3);
       ctx.closePath();
       ctx.fill();
-      // dark tip nub
       ctx.fillStyle = dark;
-      dot(tipX, tipY, r * 0.1);
+      dot(tipx, tipy, r * 0.07);
     }
+    strip(-1.15, 0.55, 1.0);
+    strip(-0.75, 1.0, 0.85);
 
-    // peel flaps (behind the fruit), splayed left / center / right
-    flap(-r * 0.92, r * 0.92);
-    flap(r * 0.92, r * 0.92);
-    flap(0, r * 1.18);
+    // full crescent body = peel (sutra color)
+    crescent(Ro, Ri, t0, t1);
+    ctx.fillStyle = peel;
+    ctx.fill();
 
-    // fruit body (pale flesh) emerging upward
-    ctx.beginPath();
-    ctx.moveTo(-r * 0.30, baseY + r * 0.04);
-    ctx.quadraticCurveTo(-r * 0.46, -r * 0.85, 0, -r * 1.02);
-    ctx.quadraticCurveTo(r * 0.46, -r * 0.85, r * 0.30, baseY + r * 0.04);
-    ctx.quadraticCurveTo(0, baseY + r * 0.30, -r * 0.30, baseY + r * 0.04);
-    ctx.closePath();
+    // soft shade along the belly (outer) edge of the peel stretch
+    ctx.fillStyle = "rgba(0,0,0,0.12)";
+    crescent(Ro, Ro - r * 0.18, tMid, t1);
+    ctx.fill();
+
+    // exposed flesh at the open end (cream), slightly inset in the crescent
+    crescent(Ro - r * 0.05, Ri + r * 0.05, t0, tMid + Math.PI * 0.04);
     ctx.fillStyle = flesh;
     ctx.fill();
 
-    // faint center seam on the flesh
-    ctx.strokeStyle = "rgba(0,0,0,0.08)";
-    ctx.lineWidth = r * 0.06;
+    // peel lip where flesh meets peel
+    ctx.strokeStyle = dark;
+    ctx.lineWidth = r * 0.05;
     ctx.beginPath();
-    ctx.moveTo(0, -r * 0.8);
-    ctx.lineTo(0, baseY);
+    ctx.arc(cx, cy, Rm, tMid - Math.PI * 0.005, tMid + Math.PI * 0.05, false);
     ctx.stroke();
 
-    // glossy highlight on the flesh
-    ctx.strokeStyle = "rgba(255,255,255,0.5)";
-    ctx.lineWidth = r * 0.12;
-    ctx.lineCap = "round";
+    // glossy sheen on the flesh
+    ctx.strokeStyle = "rgba(255,255,255,0.45)";
+    ctx.lineWidth = r * 0.1;
     ctx.beginPath();
-    ctx.moveTo(-r * 0.14, -r * 0.2);
-    ctx.quadraticCurveTo(-r * 0.22, -r * 0.7, 0.02 * r, -r * 0.92);
+    ctx.arc(cx, cy, Rm + r * 0.04, t0 + Math.PI * 0.04, tMid - Math.PI * 0.01, false);
     ctx.stroke();
 
-    // stem nub where it was peeled open
-    ctx.fillStyle = dark;
-    dot(0, -r * 1.02, r * 0.1);
-
-    // rotten spots (shadow bananas)
-    if (rotten) {
-      ctx.fillStyle = "rgba(40,26,10,0.5)";
-      dot(-r * 0.12, -r * 0.42, r * 0.12);
-      dot(r * 0.1, -r * 0.05, r * 0.1);
-      dot(-r * 0.5, r * 0.62, r * 0.12);
-      dot(r * 0.46, r * 0.56, r * 0.1);
+    // speckles on the peel (rot spots for shadow bananas)
+    function speck(t, roff, rr) {
+      var rad = Rm + roff * r;
+      ctx.beginPath();
+      ctx.arc(cx + rad * Math.cos(t), cy + rad * Math.sin(t), rr, 0, Math.PI * 2);
+      ctx.fill();
     }
+    ctx.fillStyle = rotten ? "rgba(35,22,8,0.55)" : "rgba(90,60,20,0.38)";
+    speck(tMid + 0.14, 0.10, r * 0.08);
+    speck(tMid + 0.34, -0.12, r * 0.06);
+    speck(t1 - 0.22, 0.04, r * 0.06);
+    if (rotten) {
+      speck(tMid + 0.5, 0.12, r * 0.10);
+      speck(t1 - 0.45, -0.1, r * 0.08);
+    }
+
+    // dark stem nub at the far (peel) tip
+    var stem = ptAt(t1);
+    ctx.fillStyle = dark;
+    dot(stem.x, stem.y, r * 0.12);
 
     ctx.restore();
   }
@@ -659,7 +687,7 @@
 
     // items
     items.forEach(function (it) {
-      var angle = Math.sin(it.sway) * 0.25 + it.spin;
+      var angle = it.rot + Math.sin(it.sway) * 0.12;
       it.x += Math.cos(it.sway) * it.swayAmt * 0.06;
       if (it.kind === "shadow") {
         drawBanana(it.x, it.y, it.r, angle, "#6b4f2a", "#b3a488", "#2e2110", true);
