@@ -276,11 +276,11 @@
   }
 
   function cardW() {
-    var w = clamp(W * 0.42, 140, 220);
+    var w = clamp(binW * 1.6, 78, 116);
     return w;
   }
   function cardH() {
-    var h = clamp(W * 0.26, 88, 130);
+    var h = clamp(binW * 1.2, 64, 92);
     return h;
   }
 
@@ -681,23 +681,17 @@
     roundRect(-c.w / 2 + 1, -c.h / 2 + 1, c.w - 2, c.h - 2, 13);
     ctx.stroke();
 
-    // small "question" label
-    ctx.fillStyle = "rgba(244,241,232,0.4)";
-    ctx.font = "10px 'Trebuchet MS', sans-serif";
+    // question text, auto-fit to the (smaller) card
+    ctx.fillStyle = "#f4f1e8";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("QUESTION", 0, -c.h / 2 + 22);
-
-    // big question text
-    ctx.fillStyle = "#f4f1e8";
-    var qfs = Math.min(26, c.w * 0.16);
+    var qfs = Math.min(20, c.h * 0.36);
     ctx.font = "bold " + qfs + "px 'Trebuchet MS', sans-serif";
-    ctx.fillText(c.sutra.q, 0, 4);
-
-    // hint line
-    ctx.fillStyle = "rgba(244,241,232,0.35)";
-    ctx.font = "10px 'Trebuchet MS', sans-serif";
-    ctx.fillText("sort me below", 0, c.h / 2 - 16);
+    while (qfs > 9 && ctx.measureText(c.sutra.q).width > c.w - 14) {
+      qfs -= 1;
+      ctx.font = "bold " + qfs + "px 'Trebuchet MS', sans-serif";
+    }
+    ctx.fillText(c.sutra.q, 0, 2);
 
     ctx.restore();
   }
